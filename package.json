@@ -5,9 +5,15 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "dev": "node scripts/servidor.js"
+    "dev": "node scripts/servidor.js",
+    "test": "playwright test --project=http --project=file",
+    "capturas": "playwright test --project=capturas",
+    "validar": "node scripts/validar.js"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
   }
 }

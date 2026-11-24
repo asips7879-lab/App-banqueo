@@ -39,17 +39,63 @@ La carpeta antigua `D:\App de banqueo JorG\` tiene la misma versión 1. Puedes g
 ## Estructura
 
 ```
-index.html          app completa: HTML + CSS + JS
-preguntas.js        banco de preguntas (window.PREGUNTAS = [...])
-SPEC.md             especificación y plan de trabajo
-scripts/servidor.js servidor local para `npm run dev`
-package.json        scripts de desarrollo (la app no tiene dependencias)
+index.html            app completa: HTML + CSS + JS
+preguntas.js          banco de preguntas (window.PREGUNTAS = [...]), con plantilla al inicio
+SPEC.md               especificación y plan de trabajo
+scripts/servidor.js   servidor local para `npm run dev`
+scripts/validar.js    validador del banco (`npm run validar`)
+tests/                pruebas automáticas (Playwright)
+playwright.config.js  configuración de las pruebas
+package.json          scripts de desarrollo (la app no tiene dependencias)
 ```
 
 En la fase 2 del plan, `index.html` se separará en `css/` y `js/`. Lo hará con scripts clásicos para que siga funcionando con doble clic.
 
 ## Agregar preguntas
 
-Las preguntas oficiales se agregan en `preguntas.js` con el formato de la sección 3.1 de `SPEC.md`. La dificultad tiene que ser exactamente `"Fácil"`, `"Media"` o `"Difícil"`, y la clave tiene que ser una de las opciones.
+Las preguntas oficiales van en `preguntas.js`. Al inicio del archivo hay una **plantilla**: cópiala, pégala justo antes del `];` final y rellénala. Cada pregunta va entre `{ }` y termina con una coma.
+
+- `dificultad`: exactamente `"Fácil"`, `"Media"` o `"Difícil"`, con tilde.
+- `curso`: escríbelo siempre igual (por ejemplo, siempre `"Pediatría"` con tilde). El filtro agrupa por el texto exacto.
+- `correcta`: la letra de la clave, en mayúscula. Tiene que ser una de las opciones.
+- `explicacion`: puedes dejarla vacía (`""`) y pedirle a Claude que la redacte.
+
+Después de editar, revisa el formato:
+
+```bash
+npm run validar
+```
+
+El validador muestra cuántas preguntas hay por curso y dificultad. También avisa de los errores típicos y dice dónde están: una tilde faltante, una coma olvidada, una clave que no existe, un id repetido o un curso escrito de dos formas.
 
 Las preguntas propias que agregues desde **Ajustes** se quedan en tu navegador. Para pasarlas al banco oficial, usa el botón **Copiar para enviar a Claude**.
+
+## Pruebas
+
+Las pruebas recorren la app en un navegador real, tanto con servidor local (`http://`) como abriendo el archivo directamente (`file://`). Revisan las reglas del juego (monedas, XP, misiones, racha, repaso, logros, tienda y ajustes) y responden **todas** las preguntas de `preguntas.js`.
+
+La primera vez en tu PC:
+
+```bash
+npm install
+```
+
+```bash
+npx playwright install chromium
+```
+
+Para correrlas:
+
+```bash
+npm test
+```
+
+Las marcadas como `ERROR CONOCIDO` aparecen con ✘, pero cuentan como correctas. Documentan fallas que ya conocemos y que se corregirán en la fase 3. El resultado final debe decir `passed` sin ningún `failed`.
+
+Para revisar el diseño a ojo:
+
+```bash
+npm run capturas
+```
+
+Las imágenes se guardan en `tests/capturas/`: cada vista a 390 px y a 1280 px, el modo oscuro y las etapas de la mascota.

@@ -6,7 +6,7 @@ Especificación técnica de la aplicación de banqueo de preguntas médicas. Re�
 - **Carpeta local original:** `D:\App de banqueo JorG\` (versión 1; queda como respaldo)
 - **Versión en línea (artifact de claude.ai, privada para el dueño):** https://claude.ai/artifact/TzeajyYpZ1y7GojFfmJZYL — slug `da9a291e-67a1-4bf3-a534-d386af43f941`, versión `1795458517-5907`
 - **Doc de estado en el Project de claude.ai:** `claude/app-banqueo-estado.md`
-- **Archivos de código:** `index.html` (toda la app) y `preguntas.js` (banco de preguntas). Los archivos locales y los del artifact son idénticos (md5 `e3fbe363386b3c298a28096e6e39418c` para index.html y `a5d6ed970665e509ccca83cf2c9d43a5` para preguntas.js).
+- **Archivos de código:** `index.html` (toda la app) y `preguntas.js` (banco de preguntas). En la versión 1, los archivos locales y los del artifact eran idénticos (md5 `e3fbe363386b3c298a28096e6e39418c` para index.html y `a5d6ed970665e509ccca83cf2c9d43a5` para preguntas.js; commit `9d895bd` del repositorio).
 
 ---
 
@@ -49,7 +49,8 @@ Especificación técnica de la aplicación de banqueo de preguntas médicas. Re�
 | Estilos | CSS propio con variables y `light-dark()` | Soporta tema claro y oscuro (también `data-theme="light"`/`"dark"` en `<html>`). |
 | Navegación | Rutas por hash | `#inicio`, `#banquear`, `#repaso`, `#tienda`, `#progreso`, `#ajustes`. |
 | Hosting en línea | Artifact de claude.ai | Publicado desde los dos archivos (`index.html` + `preguntas.js`). Corre en un iframe con CSP: no permite `alert/confirm/prompt`, descargas, ni `fetch` a otros dominios. Por eso los diálogos están construidos dentro de la página y el respaldo es por texto copiable. |
-| Pruebas usadas | Playwright + Google Chrome (headless) | Se usaron en el entorno de Claude para recorrer todas las vistas, responder preguntas con teclado y revisar errores de consola (resultado: 0 errores). No hay archivos de prueba en el proyecto. |
+| Pruebas | Playwright (`@playwright/test` 1.63.0, solo para desarrollo) | Suite en `tests/` (`npm test`): ~190 pruebas por `http://` y por `file://`, con banco de prueba propio, fecha simulada y 0 errores de consola exigidos. Más capturas para revisión visual (`npm run capturas`). Ver sección 7. |
+| Validador del banco | `scripts/validar.js` (Node, sin dependencias) | `npm run validar`: resumen por curso y dificultad, errores (formato, tildes, clave, ids) y avisos (sin explicación, cursos escritos de dos formas). |
 
 **Paleta (variables CSS):**
 
@@ -95,6 +96,8 @@ Especificación técnica de la aplicación de banqueo de preguntas médicas. Re�
   fuente: "..."              // opcional (p. ej. "ENAM 2024")
 }
 ```
+
+Al inicio de `preguntas.js` hay una plantilla comentada lista para copiar. El formato se revisa con `npm run validar`.
 
 El banco completo en uso es `allQ() = [...window.PREGUNTAS, ...S.custom]`. Es decir, las preguntas de `preguntas.js` más las que el usuario agregó desde Ajustes, que se guardan en su navegador.
 
@@ -303,9 +306,16 @@ app-banqueo/
 ├── preguntas.js        ← banco: window.PREGUNTAS = [...] (111 líneas)
 ├── SPEC.md             ← este documento
 ├── README.md           ← cómo abrir, clonar y agregar preguntas
-├── package.json        ← solo scripts de desarrollo; la app no tiene dependencias
+├── package.json        ← scripts de desarrollo (dev, test, capturas, validar); la app no tiene dependencias
+├── playwright.config.js ← proyectos de prueba: http, file y capturas
 ├── scripts/
-│   └── servidor.js     ← servidor local sin dependencias (`npm run dev`, puerto 8080)
+│   ├── servidor.js     ← servidor local sin dependencias (`npm run dev`, puerto 8080)
+│   └── validar.js      ← validador del banco de preguntas (`npm run validar`)
+├── tests/
+│   ├── ayudantes.js    ← abrir la app con estado, fecha y banco dados; responder; vigilar la consola
+│   ├── banco-prueba.js ← 12 preguntas solo para pruebas (3 cursos × 4, 4 por dificultad)
+│   ├── *.spec.js       ← navegacion, banqueo, reglas, repaso, tienda, ajustes, banco-real, validar
+│   └── capturas.spec.js ← capturas para revisar a ojo (salen en tests/capturas/, no se suben)
 ├── .gitattributes      ← fuerza saltos de línea LF (también en Windows)
 ├── .editorconfig       ← UTF-8, LF, 2 espacios
 └── .gitignore
@@ -378,14 +388,17 @@ app-banqueo/
 - **Resultados que se quedan.** Al volver a `#banquear` después de una sesión terminada siguen apareciendo los resultados hasta pulsar "Nuevo banqueo".
 - **Repaso con otra sesión abierta.** Empezar un repaso mientras hay una sesión de práctica a medias la descarta sin aviso.
 - **Animación sin usar en la pregunta.** La clase `.hop` (salto de la mascota) solo se usa en la pantalla de resultados. Se quitó una función `bounce()` vacía y la mascota no aparece durante las preguntas.
+- **Premio con nombre de solo espacios.** *(Detectado en la fase 1.)* El campo es obligatorio, pero `"   "` pasa la validación del navegador y el premio se guarda con nombre vacío.
 - **Detalle visual del reticulocito.** Los puntitos se superponen un poco con la boca.
 - **Navegación de escritorio apretada.** Cerca de 900–1000 px los enlaces quedan muy juntos.
+
+Los errores que se pueden comprobar automáticamente tienen una prueba marcada con `test.fail` ("ERROR CONOCIDO"): describe el comportamiento correcto y hoy falla a propósito. Al corregir cada uno, se quita el `.fail` y la prueba debe pasar.
 
 ### Decisiones tomadas (24 de noviembre de 2026)
 
 - **Dónde vive el código:** repositorio privado de GitHub `asips7879-lab/App-banqueo`. Cada fase se guarda con commits.
 - **Arquitectura:** separar en varios archivos con scripts clásicos (ver la sección 4). Se hace en la fase 2, después de las pruebas.
-- **Pruebas y validador:** se agregan pruebas con Playwright y un validador del banco de preguntas. Son solo herramientas de desarrollo; la app sigue sin dependencias.
+- **Pruebas y validador:** se agregan pruebas con Playwright y un validador del banco de preguntas. Son solo herramientas de desarrollo; la app sigue sin dependencias. El validador se adelantó a la fase 1 porque Jorge irá agregando preguntas (con su curso y dificultad) directamente en `preguntas.js`.
 
 ### Decisiones abiertas
 
@@ -925,8 +938,8 @@ window.PREGUNTAS = [
 Acordado el 24 de noviembre de 2026. Se marca cada fase al terminarla.
 
 - [x] **Fase 0: estructura base y entorno.** Repositorio, versión 1 exacta (md5 verificado), `.gitattributes` (LF), `.editorconfig`, `.gitignore`, `package.json` con `npm run dev` (servidor sin dependencias) y `README.md`.
-- [ ] **Fase 1: pruebas.** Playwright: recorrido de las 6 vistas por `http://` y por `file://`, respuestas con teclado y 0 errores de consola. Reglas (XP, monedas, confianza, repaso, racha, misiones y logros) con fecha simulada. Capturas a 390 y 1280 px, incluida la etapa 4 (birrete).
+- [x] **Fase 1: pruebas y validador.** 191 pruebas con Playwright por `http://` y por `file://`: las 6 vistas, teclado, filtros, simulacro con reloj simulado, reglas (XP, monedas, confianza, repaso, racha, misiones y logros), tienda, ajustes, y el banco real completo. 3 errores conocidos marcados con `test.fail`. Capturas a 390 y 1280 px, modo oscuro y las 5 etapas (la etapa 4 se revisó y se ve bien). Validador `npm run validar` y plantilla en `preguntas.js` (adelantados de la fase 4).
 - [ ] **Fase 2: reestructura.** Separar en `css/` y `js/` con scripts clásicos y formato legible, sin cambiar el comportamiento: las pruebas de la fase 1 deben seguir pasando.
-- [ ] **Fase 3: errores conocidos.** Corregir los 9 de la sección 5, cada uno con su prueba.
-- [ ] **Fase 4: contenido y publicación.** Validador del banco (`npm run validar`), preguntas y premios reales, y republicar el artifact en el mismo enlace.
+- [ ] **Fase 3: errores conocidos.** Corregir los 10 de la sección 5 (9 originales + 1 detectado en la fase 1), cada uno con su prueba.
+- [ ] **Fase 4: contenido y publicación.** Preguntas y premios reales, y republicar el artifact en el mismo enlace.
 - [ ] **Fase 5: decisiones de producto.** Sincronización o backend, uso público, y calibrar valores y tiempos contra los exámenes reales.
