@@ -1,0 +1,13 @@
+{
+  "name": "banqueo-jorg",
+  "version": "1.0.0",
+  "description": "App web para banquear preguntas médicas (ENAM, Residentado, Preinternado EsSalud) con mascota, misiones y repaso espaciado.",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "node scripts/servidor.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

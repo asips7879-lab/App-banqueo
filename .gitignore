@@ -1,0 +1,14 @@
+# Dependencias de desarrollo
+node_modules/
+
+# Resultados de las pruebas (Playwright)
+test-results/
+playwright-report/
+tests/capturas/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+*.log

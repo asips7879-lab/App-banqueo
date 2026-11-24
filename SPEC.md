@@ -2,7 +2,8 @@
 
 Especificación técnica de la aplicación de banqueo de preguntas médicas. Reúne todo lo construido hasta el **23 de noviembre de 2026** (versión 1) para seguir el desarrollo en Claude Code sobre los archivos locales.
 
-- **Carpeta local del proyecto:** `D:\App de banqueo JorG\`
+- **Repositorio (fuente de verdad desde el 24 de noviembre de 2026):** https://github.com/asips7879-lab/app-banqueo (privado). El plan de trabajo está en la sección 7.
+- **Carpeta local original:** `D:\App de banqueo JorG\` (versión 1; queda como respaldo)
 - **Versión en línea (artifact de claude.ai, privada para el dueño):** https://claude.ai/artifact/TzeajyYpZ1y7GojFfmJZYL — slug `da9a291e-67a1-4bf3-a534-d386af43f941`, versión `1795458517-5907`
 - **Doc de estado en el Project de claude.ai:** `claude/app-banqueo-estado.md`
 - **Archivos de código:** `index.html` (toda la app) y `preguntas.js` (banco de preguntas). Los archivos locales y los del artifact son idénticos (md5 `e3fbe363386b3c298a28096e6e39418c` para index.html y `a5d6ed970665e509ccca83cf2c9d43a5` para preguntas.js).
@@ -294,13 +295,20 @@ Aparecen arriba a la derecha (`aria-live="polite"`) y desaparecen a los 3.2 s. S
 
 ## 4. Arquitectura y estructura de carpetas
 
-**Estructura actual (real):**
+**Estructura actual (real, repositorio `app-banqueo`):**
 
 ```
-D:\App de banqueo JorG\
-├── index.html      ← app completa: HTML + CSS + JS (397 líneas)
-├── preguntas.js    ← banco: window.PREGUNTAS = [...] (111 líneas)
-└── SPEC.md         ← este documento
+app-banqueo/
+├── index.html          ← app completa: HTML + CSS + JS (397 líneas)
+├── preguntas.js        ← banco: window.PREGUNTAS = [...] (111 líneas)
+├── SPEC.md             ← este documento
+├── README.md           ← cómo abrir, clonar y agregar preguntas
+├── package.json        ← solo scripts de desarrollo; la app no tiene dependencias
+├── scripts/
+│   └── servidor.js     ← servidor local sin dependencias (`npm run dev`, puerto 8080)
+├── .gitattributes      ← fuerza saltos de línea LF (también en Windows)
+├── .editorconfig       ← UTF-8, LF, 2 espacios
+└── .gitignore
 ```
 
 **Arquitectura de `index.html`:**
@@ -319,21 +327,28 @@ D:\App de banqueo JorG\
 - **Sesión activa:** variable `Q = { list, mode, i, sel, conf, shown, res, coins0, xp0, finished, end?, tick? }`. Si existe y no terminó, `#banquear` muestra la pregunta en curso. Si terminó, muestra los resultados.
 - **Escritura:** toda mutación de estado pasa por `save()`. Las respuestas pasan por `record()`, que actualiza contadores, recompensas, repaso, racha y logros.
 
-**Estructura propuesta** (no decidida; solo si se migra a varios archivos en Claude Code):
+**Estructura decidida** (se aplica en la fase 2, después de tener pruebas):
 
 ```
-App de banqueo JorG/
-├── index.html
+app-banqueo/
+├── index.html            ← solo la estructura HTML
 ├── css/estilos.css
 ├── js/
-│   ├── estado.js       (def, carga/guardado, utilidades)
-│   ├── reglas.js       (REW, XPR, STAGES, ACC, MIS, LOG)
-│   ├── mascota.js      (mascot)
-│   ├── vistas/*.js     (inicio, banquear, repaso, tienda, progreso, ajustes)
-│   └── app.js          (router, teclado)
+│   ├── utilidades.js     ($, esc, fechas, shuffle)
+│   ├── estado.js         (def, carga y guardado, allQ)
+│   ├── reglas.js         (REW, XPR, STAGES, ACC, MIS, LOG: todos los valores ajustables)
+│   ├── mascota.js        (mascot)
+│   ├── vistas/*.js       (inicio, banquear, repaso, tienda, progreso, ajustes)
+│   └── app.js            (router, teclado)
 ├── preguntas.js
-└── SPEC.md
+├── tests/                (pruebas con Playwright)
+└── scripts/
+    ├── servidor.js
+    └── validar.js        (validador del banco de preguntas)
 ```
+
+- Se usan `<script src>` **clásicos, no módulos ES**: los módulos (`import`/`export`) no cargan al abrir el archivo con `file://`, y ese uso es un requisito.
+- Sin framework ni empaquetador: obligarían a compilar antes de abrir la app y añadirían dependencias.
 
 ---
 
@@ -366,12 +381,17 @@ App de banqueo JorG/
 - **Detalle visual del reticulocito.** Los puntitos se superponen un poco con la boca.
 - **Navegación de escritorio apretada.** Cerca de 900–1000 px los enlaces quedan muy juntos.
 
+### Decisiones tomadas (24 de noviembre de 2026)
+
+- **Dónde vive el código:** repositorio privado de GitHub `asips7879-lab/app-banqueo`. Cada fase se guarda con commits.
+- **Arquitectura:** separar en varios archivos con scripts clásicos (ver la sección 4). Se hace en la fase 2, después de las pruebas.
+- **Pruebas y validador:** se agregan pruebas con Playwright y un validador del banco de preguntas. Son solo herramientas de desarrollo; la app sigue sin dependencias.
+
 ### Decisiones abiertas
 
 - **Sincronización entre dispositivos.** Hoy el progreso vive en cada navegador por separado (artifact y archivo local no comparten datos). Queda por decidir si se añade un backend o base de datos con cuentas.
 - **Valores numéricos.** Los precios de accesorios, las recompensas por dificultad, el tiempo del simulacro (72 s por pregunta), los umbrales de etapas y los logros los propuso Claude; **Jorge no los ha confirmado**.
 - **Uso por otros estudiantes.** El objetivo menciona a "aquellos que piensan postular", pero no se ha definido si será una app personal o pública (eso afecta cuentas, banco compartido y hosting).
-- **Arquitectura.** Seguir con un solo archivo o separar en módulos (ver la estructura propuesta en la sección 4).
 - **Duración real de los exámenes.** No se verificó contra ENAM, RM ni EsSalud para calibrar el simulacro.
 
 ---
@@ -897,3 +917,16 @@ window.PREGUNTAS = [
   }
 ];
 ```
+
+---
+
+## 7. Plan de trabajo en Claude Code
+
+Acordado el 24 de noviembre de 2026. Se marca cada fase al terminarla.
+
+- [x] **Fase 0: estructura base y entorno.** Repositorio, versión 1 exacta (md5 verificado), `.gitattributes` (LF), `.editorconfig`, `.gitignore`, `package.json` con `npm run dev` (servidor sin dependencias) y `README.md`.
+- [ ] **Fase 1: pruebas.** Playwright: recorrido de las 6 vistas por `http://` y por `file://`, respuestas con teclado y 0 errores de consola. Reglas (XP, monedas, confianza, repaso, racha, misiones y logros) con fecha simulada. Capturas a 390 y 1280 px, incluida la etapa 4 (birrete).
+- [ ] **Fase 2: reestructura.** Separar en `css/` y `js/` con scripts clásicos y formato legible, sin cambiar el comportamiento: las pruebas de la fase 1 deben seguir pasando.
+- [ ] **Fase 3: errores conocidos.** Corregir los 9 de la sección 5, cada uno con su prueba.
+- [ ] **Fase 4: contenido y publicación.** Validador del banco (`npm run validar`), preguntas y premios reales, y republicar el artifact en el mismo enlace.
+- [ ] **Fase 5: decisiones de producto.** Sincronización o backend, uso público, y calibrar valores y tiempos contra los exámenes reales.
