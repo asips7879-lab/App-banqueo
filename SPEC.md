@@ -315,67 +315,52 @@ Reemplaza a "Agregar pregunta propia". Es un espacio **personal** del estudiante
 
 ## 4. Arquitectura y estructura de carpetas
 
-**Estructura actual (real, repositorio `app-banqueo`):**
+**Estructura actual (desde la fase 2):**
 
 ```
 app-banqueo/
-├── index.html          ← app completa: HTML + CSS + JS (397 líneas)
-├── preguntas.js        ← banco: window.PREGUNTAS = [...] (111 líneas)
-├── SPEC.md             ← este documento
-├── README.md           ← cómo abrir, clonar y agregar preguntas
-├── package.json        ← scripts de desarrollo (dev, test, capturas, validar); la app no tiene dependencias
-├── playwright.config.js ← proyectos de prueba: http, file y capturas
+├── index.html            ← solo la estructura HTML y la lista de scripts, en orden
+├── css/estilos.css       ← todos los estilos (empieza con la dirección de diseño: VOICE / IDEA / …)
+├── js/
+│   ├── utilidades.js     ← $, esc, fechas (today, addDays, fmt), shuffle, LET, clock, toast
+│   ├── reglas.js         ← REW, XPR, STAGES, ACC, MIS, LOG, levelInfo, stageOf: todos los valores ajustables
+│   ├── estado.js         ← KEY, def(), carga desde localStorage, save(), allQ(), Q (sesión activa)
+│   ├── logica.js         ← ensureDaily, mood, streakNow, dueList, gain, checkLog, record
+│   ├── mascota.js        ← mascot(stage, equip, mood, cls): devuelve el SVG como texto
+│   ├── vistas/
+│   │   ├── inicio.js     ← vInicio
+│   │   ├── banquear.js   ← vBanquear, startQuiz, renderQuiz, pick, setConf, doConfirm, fbHtml, next, finishQuiz, renderResults
+│   │   ├── repaso.js     ← vRepaso
+│   │   ├── tienda.js     ← vTienda
+│   │   ├── progreso.js   ← vProgreso
+│   │   └── ajustes.js    ← vAjustes
+│   └── app.js            ← IC, TABS, renderNav, header, route, VIEWS, hashchange, atajos de teclado y arranque
+├── preguntas.js          ← banco: window.PREGUNTAS = [...], con plantilla al inicio
+├── SPEC.md               ← este documento
+├── README.md             ← cómo abrir, clonar, agregar preguntas y correr las pruebas
+├── package.json          ← scripts de desarrollo (dev, test, capturas, validar, formato); la app no tiene dependencias
+├── playwright.config.js  ← proyectos de prueba: http, file y capturas
+├── .prettierrc.json      ← formato del código (`npm run formato`)
 ├── scripts/
-│   ├── servidor.js     ← servidor local sin dependencias (`npm run dev`, puerto 8080)
-│   └── validar.js      ← validador del banco de preguntas (`npm run validar`)
+│   ├── servidor.js       ← servidor local sin dependencias (`npm run dev`, puerto 8080)
+│   └── validar.js        ← validador del banco de preguntas (`npm run validar`)
 ├── tests/
-│   ├── ayudantes.js    ← abrir la app con estado, fecha y banco dados; responder; vigilar la consola
-│   ├── banco-prueba.js ← 12 preguntas solo para pruebas (3 cursos × 4, 4 por dificultad)
-│   ├── *.spec.js       ← navegacion, banqueo, reglas, repaso, tienda, ajustes, banco-real, validar
-│   └── capturas.spec.js ← capturas para revisar a ojo (salen en tests/capturas/, no se suben)
-├── .gitattributes      ← fuerza saltos de línea LF (también en Windows)
-├── .editorconfig       ← UTF-8, LF, 2 espacios
+│   ├── ayudantes.js      ← abrir la app con estado, fecha y banco dados; responder; vigilar la consola
+│   ├── banco-prueba.js   ← 12 preguntas solo para pruebas (3 cursos × 4, 4 por dificultad)
+│   ├── *.spec.js         ← navegacion, banqueo, reglas, repaso, tienda, ajustes, banco-real, validar
+│   └── capturas.spec.js  ← capturas para revisar a ojo (salen en tests/capturas/, no se suben)
+├── .gitattributes        ← fuerza saltos de línea LF (también en Windows)
+├── .editorconfig         ← UTF-8, LF, 2 espacios
 └── .gitignore
 ```
 
-**Arquitectura de `index.html`:**
-- `<head>`: metadatos, Google Fonts y todo el CSS. El CSS empieza con un comentario de dirección de diseño (VOICE / IDEA / PICTURE / COLOUR and TYPE / LAYOUT).
-- `<body>`: `header` (logo, nivel, monedas), `nav#nav`, `main#view` (contenedor de la vista actual) y `#toasts`.
-- `<script src="preguntas.js">` y después el script de la app, envuelto en un bloque `{ … }` para no contaminar el ámbito global. Sus secciones, en orden:
-  1. Utilidades: `$`, `esc` (escapa HTML), fechas (`today`, `addDays`, `fmt`) y `shuffle`.
-  2. Estado: `def()`, carga desde `localStorage`, `save()` y `allQ()`.
-  3. Tablas de reglas: `REW`, `XPR`, `STAGES`, `ACC`, `MIS`, `LOG` y `levelInfo`/`stageOf`.
-  4. Lógica: `ensureDaily`, `mood`, `streakNow`, `dueList`, `toast`, `gain`, `checkLog`.
-  5. `mascot(stage, equip, mood, cls)`, que devuelve el SVG como texto.
-  6. Navegación: `IC` (íconos SVG), `TABS`, `renderNav`, `header`, `route`.
-  7. Vistas: `vInicio`, `vBanquear` (+ `startQuiz`, `renderQuiz`, `pick`, `setConf`, `doConfirm`, `fbHtml`, `next`, `finishQuiz`, `renderResults`), `record`, `vRepaso`, `vTienda`, `vProgreso`, `vAjustes`.
-  8. `VIEWS`, escucha de `hashchange`, atajos de teclado y `route()` inicial.
+**Cómo funciona:**
+- Se usan `<script src>` **clásicos, no módulos ES**: los módulos (`import`/`export`) no cargan al abrir el archivo con `file://`, y ese uso es un requisito. Las declaraciones de nivel superior (`const`, `let`, `function`) se comparten entre archivos, así que **el orden de los `<script>` en `index.html` importa**: cada archivo solo usa lo que definen los anteriores (o lo usa dentro de funciones que se llaman después del arranque).
+- Sin framework ni empaquetador: obligarían a compilar antes de abrir la app y añadirían dependencias.
 - **Flujo de render:** `route()` lee el hash, asegura el día, pinta la navegación y el encabezado, y llama a la vista. Cada vista reemplaza `#view.innerHTML` y engancha sus eventos.
 - **Sesión activa:** variable `Q = { list, mode, i, sel, conf, shown, res, coins0, xp0, finished, end?, tick? }`. Si existe y no terminó, `#banquear` muestra la pregunta en curso. Si terminó, muestra los resultados.
 - **Escritura:** toda mutación de estado pasa por `save()`. Las respuestas pasan por `record()`, que actualiza contadores, recompensas, repaso, racha y logros.
-
-**Estructura decidida** (se aplica en la fase 2, después de tener pruebas):
-
-```
-app-banqueo/
-├── index.html            ← solo la estructura HTML
-├── css/estilos.css
-├── js/
-│   ├── utilidades.js     ($, esc, fechas, shuffle)
-│   ├── estado.js         (def, carga y guardado, allQ)
-│   ├── reglas.js         (REW, XPR, STAGES, ACC, MIS, LOG: todos los valores ajustables)
-│   ├── mascota.js        (mascot)
-│   ├── vistas/*.js       (inicio, banquear, repaso, tienda, progreso, ajustes)
-│   └── app.js            (router, teclado)
-├── preguntas.js
-├── tests/                (pruebas con Playwright)
-└── scripts/
-    ├── servidor.js
-    └── validar.js        (validador del banco de preguntas)
-```
-
-- Se usan `<script src>` **clásicos, no módulos ES**: los módulos (`import`/`export`) no cargan al abrir el archivo con `file://`, y ese uso es un requisito.
-- Sin framework ni empaquetador: obligarían a compilar antes de abrir la app y añadirían dependencias.
+- **Formato:** el código se formatea con Prettier (`npm run formato`, configuración en `.prettierrc.json`).
 
 ---
 
@@ -964,7 +949,7 @@ Acordado el 24 de noviembre de 2026. Se marca cada fase al terminarla.
 
 - [x] **Fase 0: estructura base y entorno.** Repositorio, versión 1 exacta (md5 verificado), `.gitattributes` (LF), `.editorconfig`, `.gitignore`, `package.json` con `npm run dev` (servidor sin dependencias) y `README.md`.
 - [x] **Fase 1: pruebas y validador.** 191 pruebas con Playwright por `http://` y por `file://`: las 6 vistas, teclado, filtros, simulacro con reloj simulado, reglas (XP, monedas, confianza, repaso, racha, misiones y logros), tienda, ajustes, y el banco real completo. 3 errores conocidos marcados con `test.fail`. Capturas a 390 y 1280 px, modo oscuro y las 5 etapas (la etapa 4 se revisó y se ve bien). Validador `npm run validar` y plantilla en `preguntas.js` (adelantados de la fase 4).
-- [ ] **Fase 2: reestructura.** Separar en `css/` y `js/` con scripts clásicos y formato legible, sin cambiar el comportamiento: las pruebas de la fase 1 deben seguir pasando. El guardado queda aislado en `js/estado.js` para poder llevarlo a la nube en la fase 5.
+- [x] **Fase 2: reestructura.** `index.html` separado en `css/estilos.css` y 12 archivos en `js/` (scripts clásicos), con formato legible (Prettier). El comportamiento no cambió: las 191 pruebas pasan igual por `http://` y `file://`. El guardado queda aislado en `js/estado.js` para llevarlo a la nube en la fase 5.
 - [ ] **Fase 3: errores conocidos y Cuaderno de errores.** Corregir los 10 errores de la sección 5, cada uno con su prueba. Reemplazar "Agregar pregunta propia" por el Cuaderno de errores (sección 3.14).
 - [ ] **Fase 4: diseño de Hemi y progresión.** Aspecto por etapa, número y nombres de las etapas, curva de XP, logros, accesorios y desbloqueos, según el diseño de Jorge. Calibrar los valores numéricos.
 - [ ] **Fase 5: cuentas y sincronización.** Registro e inicio de sesión (usuario, correo, contraseña y recuperación de contraseña). Progreso, premios y cuaderno guardados por usuario en la nube, con reglas que impiden ver o cambiar datos ajenos. Que funcione sin conexión y sincronice al volver la conexión. Pasar el progreso local existente a la cuenta. Las preguntas siguen en el repositorio. Consecuencias técnicas: la librería del proveedor se incluye como archivo local (sin CDN), y el artifact de claude.ai, que bloquea conexiones a otros dominios, queda solo como vista previa sin cuentas.
