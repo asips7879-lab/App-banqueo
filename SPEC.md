@@ -2,7 +2,7 @@
 
 Especificación técnica de la aplicación de banqueo de preguntas médicas. Reúne todo lo construido hasta el **23 de noviembre de 2026** (versión 1) para seguir el desarrollo en Claude Code sobre los archivos locales.
 
-- **Repositorio (fuente de verdad desde el 24 de noviembre de 2026):** https://github.com/asips7879-lab/app-banqueo (privado). El plan de trabajo está en la sección 7.
+- **Repositorio (fuente de verdad desde el 24 de noviembre de 2026):** https://github.com/asips7879-lab/App-banqueo (privado). El plan de trabajo está en la sección 7.
 - **Carpeta local original:** `D:\App de banqueo JorG\` (versión 1; queda como respaldo)
 - **Versión en línea (artifact de claude.ai, privada para el dueño):** https://claude.ai/artifact/TzeajyYpZ1y7GojFfmJZYL — slug `da9a291e-67a1-4bf3-a534-d386af43f941`, versión `1795458517-5907`
 - **Doc de estado en el Project de claude.ai:** `claude/app-banqueo-estado.md`
@@ -383,7 +383,7 @@ app-banqueo/
 
 ### Decisiones tomadas (24 de noviembre de 2026)
 
-- **Dónde vive el código:** repositorio privado de GitHub `asips7879-lab/app-banqueo`. Cada fase se guarda con commits.
+- **Dónde vive el código:** repositorio privado de GitHub `asips7879-lab/App-banqueo`. Cada fase se guarda con commits.
 - **Arquitectura:** separar en varios archivos con scripts clásicos (ver la sección 4). Se hace en la fase 2, después de las pruebas.
 - **Pruebas y validador:** se agregan pruebas con Playwright y un validador del banco de preguntas. Son solo herramientas de desarrollo; la app sigue sin dependencias.
 

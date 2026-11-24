@@ -23,7 +23,7 @@ El progreso se guarda en el navegador (`localStorage`). Cada navegador, y tambi�
 Clona el repositorio en una carpeta nueva, por ejemplo `D:\app-banqueo`:
 
 ```bash
-git clone https://github.com/asips7879-lab/app-banqueo.git D:\app-banqueo
+git clone https://github.com/asips7879-lab/App-banqueo.git D:\app-banqueo
 ```
 
 También puedes usar [GitHub Desktop](https://desktop.github.com): *File → Clone repository*.
