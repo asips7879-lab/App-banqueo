@@ -33,7 +33,7 @@ function route() {
   const v = (location.hash || '#inicio').slice(1);
   const view = VIEWS[v] ? v : 'inicio';
   ensureDaily();
-  renderNav(view);
+  renderNav(PESTANA_DE[view] || view);
   header();
   VIEWS[view]();
   window.scrollTo(0, 0);
@@ -46,7 +46,10 @@ const VIEWS = {
   tienda: vTienda,
   progreso: vProgreso,
   ajustes: vAjustes,
+  cuaderno: vCuaderno, // se entra desde Ajustes
 };
+// Vistas sin pestaña propia: qué pestaña queda marcada en la navegación.
+const PESTANA_DE = { cuaderno: 'ajustes' };
 window.addEventListener('hashchange', route);
 document.addEventListener('keydown', (e) => {
   if (!Q || Q.finished || !$('#opts') || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;

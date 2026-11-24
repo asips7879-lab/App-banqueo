@@ -35,3 +35,6 @@ function toast(m) {
   $('#toasts').appendChild(d);
   setTimeout(() => d.remove(), 3200);
 }
+
+// Identificador único corto: prefijo + tiempo + azar (p. ej. "clz3k9a4f2q").
+const nuevoId = (prefijo) => prefijo + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);

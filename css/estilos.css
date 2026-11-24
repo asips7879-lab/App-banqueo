@@ -536,3 +536,99 @@ svg.mascot {
     display: none;
   }
 }
+
+/* ---------- Cuaderno de errores ---------- */
+.btn.mini {
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+.chk {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0;
+}
+.chk input {
+  width: 20px;
+  min-height: 20px;
+  flex: none;
+}
+.mia {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card);
+  border-left: 4px solid var(--gold);
+}
+.mia div,
+.oficial div {
+  white-space: pre-wrap;
+}
+.oficial {
+  margin-top: 10px;
+}
+.rev-item {
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+.cu-panel {
+  margin-top: 8px;
+}
+.cu-ok {
+  color: var(--ok);
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+.entrada {
+  margin-bottom: 10px;
+  padding: 14px 16px;
+}
+.entrada summary {
+  cursor: pointer;
+}
+.entrada .q {
+  font-size: 17px;
+}
+.cu-enun {
+  font-weight: 600;
+  margin-top: 4px;
+}
+.entrada[open] .cu-enun {
+  display: none; /* abierta, el enunciado completo se muestra debajo */
+}
+.tag.nota {
+  background: #fff1cc;
+  color: #7a5600;
+}
+.cu-ops {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.cu-ops li {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+.cu-ops li.ok {
+  border-color: var(--ok);
+  background: var(--okbg);
+}
+.cu-ops li.bad {
+  border-color: var(--bad);
+  background: var(--badbg);
+}
+.entrada .perla {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg);
+  font-weight: 600;
+}
+.cu-acciones {
+  margin-top: 12px;
+}

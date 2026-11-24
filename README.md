@@ -69,7 +69,7 @@ npm run validar
 
 El validador muestra cuántas preguntas hay por curso y dificultad. También avisa de los errores típicos y dice dónde están: una tilde faltante, una coma olvidada, una clave que no existe, un id repetido o un curso escrito de dos formas.
 
-Las preguntas propias que agregues desde **Ajustes** se quedan en tu navegador. Para pasarlas al banco oficial, usa el botón **Copiar para enviar a Claude**.
+Solo el moderador agrega preguntas al banco. Los estudiantes tienen su **Cuaderno de errores** (en **Ajustes**). Ahí guardan preguntas del banco, desde la revisión al terminar un banqueo, o preguntas externas, siempre con su propia explicación, y las repasan junto con las que fallaron. Esas preguntas nunca entran al banco oficial.
 
 ## Pruebas
 

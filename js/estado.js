@@ -21,7 +21,7 @@ const def = () => ({
     { id: 'p2', nombre: 'Mi postre favorito', costo: 300 },
   ],
   canjes: [],
-  custom: [],
+  cuaderno: [], // Cuaderno de errores (ver js/cuaderno.js)
   logros: [],
   total: 0,
   ok: 0,
@@ -29,15 +29,59 @@ const def = () => ({
   course: {},
 });
 let S = def();
-try {
-  const raw = localStorage.getItem(KEY);
-  if (raw) S = Object.assign(def(), JSON.parse(raw));
-} catch (e) {}
 const save = () => {
   try {
     localStorage.setItem(KEY, JSON.stringify(S));
   } catch (e) {}
 };
-const allQ = () => [...(window.PREGUNTAS || []), ...S.custom];
+
+// Banco oficial. Solo el moderador lo cambia (en preguntas.js); los estudiantes no agregan preguntas.
+const allQ = () => [...(window.PREGUNTAS || [])];
+
+// Carga un progreso (del navegador o de una copia de seguridad) y completa lo que falte.
+// Devuelve true si hubo que adaptarlo desde una versión anterior.
+function cargarEstado(guardado) {
+  S = Object.assign(def(), guardado);
+  return migrar();
+}
+
+// Adapta progresos guardados con versiones anteriores de la app.
+function migrar() {
+  let cambio = false;
+  if (!Array.isArray(S.cuaderno)) {
+    S.cuaderno = [];
+    cambio = true;
+  }
+  // Versión 1: las "preguntas propias" (S.custom) pasan al Cuaderno de errores como preguntas externas.
+  if ('custom' in S) {
+    for (const q of Array.isArray(S.custom) ? S.custom : []) {
+      S.cuaderno.push({
+        id: nuevoId('c'),
+        origen: 'externa',
+        pregunta: {
+          curso: q.curso || '',
+          tema: q.tema || '',
+          dificultad: q.dificultad || 'Media',
+          enunciado: q.enunciado || '',
+          opciones: { ...(q.opciones || {}) },
+          correcta: q.correcta,
+          perla: q.perla || '',
+          fuente: q.fuente || '',
+        },
+        nota: q.explicacion || '',
+        fecha: today(),
+        archivada: false,
+      });
+    }
+    delete S.custom;
+    cambio = true;
+  }
+  return cambio;
+}
+
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw && cargarEstado(JSON.parse(raw))) save();
+} catch (e) {}
 
 let Q = null; // sesión de preguntas activa

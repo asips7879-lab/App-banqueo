@@ -73,7 +73,7 @@ function renderQuiz() {
     sim = Q.mode === 'simulacro',
     dc = (q.dificultad || 'M')[0];
   $('#view').innerHTML = `<div class="card" style="max-width:780px;margin:auto">
- <div class="row" style="justify-content:space-between"><b>${Q.mode === 'repaso' ? 'Repaso' : sim ? 'Simulacro' : 'Práctica'} · ${Q.i + 1}/${Q.list.length}</b>
+ <div class="row" style="justify-content:space-between"><b>${{ repaso: 'Repaso', simulacro: 'Simulacro', cuaderno: 'Cuaderno' }[Q.mode] || 'Práctica'} · ${Q.i + 1}/${Q.list.length}</b>
  ${sim ? `<span class="pill" style="background:var(--line)" id="timer">${clock(Q.end - Date.now())}</span>` : ''}
  <button class="btn alt" id="quit" style="min-height:38px;padding:6px 12px">Terminar</button></div>
  <div class="bar" style="margin:10px 0"><i style="width:${(Q.i / Q.list.length) * 100}%"></i></div>
@@ -110,7 +110,8 @@ function doConfirm() {
   if (Q.shown) return next();
   const q = Q.list[Q.i],
     ok = Q.sel === q.correcta;
-  record(q, Q.sel, Q.conf, Q.mode);
+  // Las preguntas externas del cuaderno no dan monedas ni XP, ni cuentan en estadísticas o repaso.
+  if (!q.externa) record(q, Q.sel, Q.conf, Q.mode);
   Q.res.push({ q, sel: Q.sel, ok, conf: Q.conf });
   if (Q.mode === 'simulacro') return next();
   Q.shown = true;
@@ -125,8 +126,19 @@ function doConfirm() {
   $('#fb').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 function fbHtml(q, ok, conf) {
-  return `<div class="fb ${ok ? 'ok' : 'bad'}"><h3>${ok ? '¡Correcto!' : 'Incorrecto · la respuesta es ' + q.correcta}${ok && conf === 'seguro' ? ' · bono de seguridad ×1.5' : ''}${!ok && conf === 'seguro' ? ' · error peligroso, irá primero a tu repaso' : ''}</h3>
- <div>${esc(q.explicacion)}</div>${q.perla ? `<div class="perla">Perla: ${esc(q.perla)}</div>` : ''}${q.fuente ? `<p class="small mute" style="margin:8px 0 0">Fuente: ${esc(q.fuente)}</p>` : ''}</div>`;
+  const e = entradaDe(q),
+    nota = e && e.nota,
+    peligro = !ok && conf === 'seguro' && !q.externa;
+  const mia = nota ? `<div class="mia"><b>Tu explicación</b><div>${esc(nota)}</div></div>` : '';
+  const oficial = q.externa
+    ? nota
+      ? ''
+      : '<div class="mute">Todavía no tiene explicación.</div>'
+    : nota
+      ? `<div class="oficial"><b>Explicación de la app</b><div>${esc(q.explicacion)}</div></div>`
+      : `<div>${esc(q.explicacion)}</div>`;
+  return `<div class="fb ${ok ? 'ok' : 'bad'}"><h3>${ok ? '¡Correcto!' : 'Incorrecto · la respuesta es ' + q.correcta}${ok && conf === 'seguro' ? ' · bono de seguridad ×1.5' : ''}${peligro ? ' · error peligroso, irá primero a tu repaso' : ''}</h3>
+ ${mia}${oficial}${q.perla ? `<div class="perla">Perla: ${esc(q.perla)}</div>` : ''}${q.fuente ? `<p class="small mute" style="margin:8px 0 0">Fuente: ${esc(q.fuente)}</p>` : ''}</div>`;
 }
 function next() {
   if (Q.i + 1 < Q.list.length) {
@@ -150,22 +162,62 @@ function renderResults() {
   const n = Q.res.length,
     ok = Q.res.filter((r) => r.ok).length,
     pct = Math.round((ok / n) * 100),
-    md = pct >= 70 ? 'feliz' : pct >= 40 ? 'normal' : 'triste';
+    md = pct >= 70 ? 'feliz' : pct >= 40 ? 'normal' : 'triste',
+    alRepaso = Q.res.filter((r) => !r.ok && !r.q.externa).length;
   $('#view').innerHTML = `<div class="card" style="max-width:780px;margin:auto">
  <div class="row" style="gap:18px"><div style="width:140px">${mascot(stageOf(levelInfo(S.xp).l), S.equip, md, 'hop')}</div>
- <div><h1>${ok}/${n} correctas · ${pct}%</h1><p class="mute">+${S.coins - Q.coins0} monedas · +${S.xp - Q.xp0} XP${n - ok ? ' · ' + (n - ok) + ' preguntas pasan a tu repaso' : ''}</p>
+ <div><h1>${ok}/${n} correctas · ${pct}%</h1><p class="mute">+${S.coins - Q.coins0} monedas · +${S.xp - Q.xp0} XP${alRepaso ? ' · ' + alRepaso + ' preguntas pasan a tu repaso' : ''}</p>
  <div class="row"><button class="btn" id="again">Nuevo banqueo</button><a class="btn alt" href="#inicio" style="text-decoration:none">Ver misiones</a></div></div></div>
- <h2 class="sec">Revisión</h2>${Q.res
+ <h2 class="sec">Revisión</h2><div id="revision">${Q.res
    .map(
      (
        r,
        i,
-     ) => `<details ${!r.ok && Q.mode === 'simulacro' ? 'open' : ''} style="border-top:1px solid var(--line);padding:10px 0"><summary><b style="color:${r.ok ? 'var(--ok)' : 'var(--bad)'}">${r.ok ? '✓' : '✗'}</b> ${i + 1}. ${esc(r.q.enunciado.slice(0, 90))}${r.q.enunciado.length > 90 ? '…' : ''}</summary>
- <p class="small">Tu respuesta: <b>${r.sel}</b> · Correcta: <b>${r.q.correcta}) ${esc(r.q.opciones[r.q.correcta])}</b></p>${fbHtml(r.q, r.ok, r.conf)}</details>`,
+     ) => `<div class="rev-item"><details ${!r.ok && Q.mode === 'simulacro' ? 'open' : ''}><summary><b style="color:${r.ok ? 'var(--ok)' : 'var(--bad)'}">${r.ok ? '✓' : '✗'}</b> ${i + 1}. ${esc(r.q.enunciado.slice(0, 90))}${r.q.enunciado.length > 90 ? '…' : ''}</summary>
+ <p class="small">Tu respuesta: <b>${r.sel}</b> · Correcta: <b>${r.q.correcta}) ${esc(r.q.opciones[r.q.correcta])}</b></p><div class="rev-fb">${fbHtml(r.q, r.ok, r.conf)}</div></details>
+ <div class="cu-panel" data-i="${i}">${panelCuaderno(r)}</div></div>`,
    )
-   .join('')}</div>`;
+   .join('')}</div></div>`;
   $('#again').onclick = () => {
     Q = null;
     route();
   };
+  $('#revision').onclick = (ev) => accionCuadernoEnResultados(ev);
+}
+
+// Estado del cuaderno bajo cada pregunta de la revisión.
+function panelCuaderno(r) {
+  const e = entradaDe(r.q);
+  if (!e) return '<button class="btn alt mini" data-cu="agregar">¿Agregar al cuaderno de errores?</button>';
+  return `<p class="small cu-ok">✓ En tu cuaderno de errores${e.nota ? ' · con tu explicación' : ''}</p>
+ <button class="btn alt mini" data-cu="editar">${e.nota ? 'Editar mi explicación' : 'Añadir premisa extra'}</button>`;
+}
+
+// Botones del cuaderno en la revisión: agregar → ¿premisa extra? → editar y guardar.
+function accionCuadernoEnResultados(ev) {
+  const b = ev.target.closest('button[data-cu], button[data-nota]');
+  if (!b) return;
+  const panel = b.closest('.cu-panel'),
+    r = Q.res[+panel.dataset.i];
+  const repintar = () => {
+    panel.innerHTML = panelCuaderno(r);
+    panel.closest('.rev-item').querySelector('.rev-fb').innerHTML = fbHtml(r.q, r.ok, r.conf);
+  };
+  const accion = b.dataset.cu || b.dataset.nota;
+  if (accion === 'agregar') {
+    agregarAlCuaderno(r.q, { miRespuesta: r.sel, acerto: r.ok });
+    toast('Agregada a tu cuaderno de errores');
+    panel.innerHTML = `<p class="small cu-ok">✓ Agregada a tu cuaderno de errores</p>
+ <p class="small" style="margin:6px 0"><b>¿Quieres añadir alguna premisa extra a la explicación?</b></p>
+ <div class="row"><button class="btn mini" data-cu="editar">Sí, editarla</button><button class="btn alt mini" data-cu="listo">No, dejar la explicación de la app</button></div>`;
+  } else if (accion === 'editar') {
+    panel.innerHTML = htmlEditorNota(entradaDe(r.q));
+    panel.querySelector('textarea').focus();
+  } else if (accion === 'guardar') {
+    guardarNota(entradaDe(r.q), panel.querySelector('textarea').value);
+    toast('Tu explicación quedó guardada');
+    repintar();
+  } else {
+    repintar(); // "listo" o "cancelar": queda guardada con la explicación que ya tenía
+  }
 }

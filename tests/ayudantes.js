@@ -13,8 +13,8 @@ const { BANCO, porId } = require('./banco-prueba');
 const CLAVE = 'banqueo-jorg-v1';
 const HOY = '2026-11-24';
 const LOGROS = ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8'];
-const REW = { 'Fácil': 3, Media: 5, 'Difícil': 8 };
-const XPR = { 'Fácil': 8, Media: 12, 'Difícil': 18 };
+const REW = { Fácil: 3, Media: 5, Difícil: 8 };
+const XPR = { Fácil: 8, Media: 12, Difícil: 18 };
 
 // dia(-1) → ayer, dia(3) → dentro de 3 días (formato YYYY-MM-DD).
 function dia(n, desde = HOY) {
@@ -39,14 +39,18 @@ class App {
     // reloj: true controla también los temporizadores (para el cronómetro del simulacro).
     if (reloj) await page.clock.install({ time: momento });
     else await page.clock.setFixedTime(momento);
-    await page.addInitScript(({ clave, estado, banco }) => {
-      if (banco) Object.defineProperty(window, 'PREGUNTAS', { configurable: true, get: () => banco, set: () => {} });
-      // Siembra el progreso solo la primera vez: al recargar se conserva lo que guardó la app.
-      if (estado && !sessionStorage.getItem('__sembrado')) {
-        localStorage.setItem(clave, JSON.stringify(estado));
-        sessionStorage.setItem('__sembrado', '1');
-      }
-    }, { clave: CLAVE, estado: estado || null, banco });
+    await page.addInitScript(
+      ({ clave, estado, banco }) => {
+        if (banco)
+          Object.defineProperty(window, 'PREGUNTAS', { configurable: true, get: () => banco, set: () => {} });
+        // Siembra el progreso solo la primera vez: al recargar se conserva lo que guardó la app.
+        if (estado && !sessionStorage.getItem('__sembrado')) {
+          localStorage.setItem(clave, JSON.stringify(estado));
+          sessionStorage.setItem('__sembrado', '1');
+        }
+      },
+      { clave: CLAVE, estado: estado || null, banco },
+    );
     await page.goto(`index.html#${vista}`);
     await base.expect(page.locator('#view')).not.toBeEmpty();
   }
@@ -92,7 +96,13 @@ class App {
   // La pregunta que está en pantalla.
   async preguntaActual() {
     const texto = (await this.page.locator('.q').textContent()).trim();
-    if (this.banco) return porId(texto.match(/^\[(f\d+)\]/)[1]);
+    const m = texto.match(/^\[(f\d+)\]/);
+    if (this.banco && m) return porId(m[1]);
+    // Pregunta externa del Cuaderno de errores
+    const externa = ((await this.estado())?.cuaderno || []).find(
+      (e) => e.origen === 'externa' && e.pregunta.enunciado.trim() === texto,
+    );
+    if (externa) return { ...externa.pregunta, externa: true };
     const reales = await this.page.evaluate(() => window.PREGUNTAS);
     return reales.find((q) => q.enunciado.trim() === texto);
   }
@@ -139,7 +149,9 @@ const test = base.test.extend({
       });
       page.on('pageerror', (e) => errores.push(e.message));
       if (testInfo.project.name !== 'capturas') {
-        await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+        await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) =>
+          r.fulfill({ status: 200, contentType: 'text/css', body: '' }),
+        );
       }
       await use();
       base.expect(errores, 'La página no debe mostrar errores en la consola').toEqual([]);
@@ -151,4 +163,65 @@ const test = base.test.extend({
   },
 });
 
-module.exports = { test, expect: base.expect, App, BANCO, porId, CLAVE, HOY, LOGROS, REW, XPR, dia, neutro };
+// Entradas del Cuaderno de errores para sembrar en el progreso.
+function entradaBanco(qid, extra = {}) {
+  const q = porId(qid);
+  return {
+    id: `c-${qid}`,
+    origen: 'banco',
+    qid,
+    pregunta: {
+      curso: q.curso,
+      tema: q.tema,
+      dificultad: q.dificultad,
+      enunciado: q.enunciado,
+      opciones: { ...q.opciones },
+      correcta: q.correcta,
+      explicacion: q.explicacion,
+      perla: q.perla || '',
+      fuente: q.fuente || '',
+    },
+    nota: '',
+    fecha: HOY,
+    archivada: false,
+    ...extra,
+  };
+}
+
+function entradaExterna(extra = {}) {
+  return {
+    id: 'c-ext1',
+    origen: 'externa',
+    pregunta: {
+      curso: 'Neurología',
+      tema: 'Cefaleas',
+      dificultad: 'Media',
+      enunciado: 'Pregunta externa sobre el tratamiento de la migraña',
+      opciones: { A: 'Triptanes', B: 'Opioides', C: 'Ergotamina diaria', D: 'Paracetamol' },
+      correcta: 'A',
+      perla: '',
+      fuente: 'Simulacro externo',
+    },
+    nota: 'Los triptanes abortan la crisis.',
+    fecha: HOY,
+    archivada: false,
+    ...extra,
+  };
+}
+
+module.exports = {
+  test,
+  expect: base.expect,
+  App,
+  BANCO,
+  porId,
+  CLAVE,
+  HOY,
+  LOGROS,
+  REW,
+  XPR,
+  dia,
+  neutro,
+  entradaBanco,
+  entradaExterna,
+};
