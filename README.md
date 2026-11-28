@@ -91,7 +91,7 @@ Para correrlas:
 npm test
 ```
 
-Las marcadas como `ERROR CONOCIDO` aparecen con ✘, pero cuentan como correctas. Documentan fallas que ya conocemos y que se corregirán en la fase 3. El resultado final debe decir `passed` sin ningún `failed`.
+El resultado final debe decir `passed` sin ningún `failed`. Si una prueba falla, el mensaje indica qué esperaba y qué encontró.
 
 Para revisar el diseño a ojo:
 

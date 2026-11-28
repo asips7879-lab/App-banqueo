@@ -5,9 +5,15 @@
 //   MIS        misiones diarias
 //   LOG        logros
 //   levelInfo  XP necesaria por nivel (100, 125, 150…)
+//   REPASO_DIAS  días hasta la próxima vez que vuelve una pregunta del repaso tras cada acierto
 
 const REW = { Fácil: 3, Media: 5, Difícil: 8 },
   XPR = { Fácil: 8, Media: 12, Difícil: 18 };
+// Repaso espaciado: una pregunta fallada vuelve hoy; tras cada acierto en el repaso vuelve a los
+// 1, 3, 7 y 15 días. Con un acierto más que intervalos (5 seguidos), sale del repaso.
+const REPASO_DIAS = [1, 3, 7, 15];
+// Simulacro: segundos por pregunta (tiempo total = SIM_SEGUNDOS × número de preguntas).
+const SIM_SEGUNDOS = 72;
 const STAGES = [
   { min: 1, n: 'Célula madre' },
   { min: 3, n: 'Reticulocito' },

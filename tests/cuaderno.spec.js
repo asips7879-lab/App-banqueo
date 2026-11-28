@@ -361,3 +361,13 @@ test.describe('migración desde la versión anterior', () => {
     expect((await app.estado()).cuaderno).toMatchObject([esperada]);
   });
 });
+
+test('repasar el cuaderno con un banqueo a medias pide confirmación', async ({ app, page }) => {
+  await app.abrir({ estado: neutro({ cuaderno: [entradaExterna()] }) });
+  await app.empezar({ cantidad: 10 });
+  await app.ir('ajustes');
+  await page.locator('#cu-repasar').click();
+  await expect(page.locator('#cu-aviso')).toContainText('Tienes un banqueo a medias (0 de 10 respondidas)');
+  await page.getByRole('button', { name: 'Cerrarlo y empezar' }).click();
+  await expect(page.getByText('Cuaderno · 1/1')).toBeVisible();
+});

@@ -6,13 +6,30 @@ const { test, expect } = require('@playwright/test');
 const { validar, cargarBanco } = require('../scripts/validar');
 
 const buena = (extra = {}) => ({
-  id: 'p1', examen: ['ENAM'], curso: 'Pediatría', tema: 'T', dificultad: 'Media', enunciado: '¿Pregunta?',
-  opciones: { A: 'a', B: 'b', C: 'c', D: 'd' }, correcta: 'B', explicacion: 'Porque sí.', ...extra,
+  id: 'p1',
+  examen: ['ENAM'],
+  curso: 'Pediatría',
+  tema: 'T',
+  dificultad: 'Media',
+  enunciado: '¿Pregunta?',
+  opciones: { A: 'a', B: 'b', C: 'c', D: 'd' },
+  correcta: 'B',
+  explicacion: 'Porque sí.',
+  ...extra,
 });
 
 test('una pregunta bien escrita pasa sin errores ni avisos', () => {
-  expect(validar([buena(), buena({ id: 'p2', enunciado: 'Otra', opciones: { A: 'a', B: 'b', C: 'c', D: 'd', E: 'e' }, correcta: 'E' })]))
-    .toMatchObject({ errores: [], avisos: [] });
+  expect(
+    validar([
+      buena(),
+      buena({
+        id: 'p2',
+        enunciado: 'Otra',
+        opciones: { A: 'a', B: 'b', C: 'c', D: 'd', E: 'e' },
+        correcta: 'E',
+      }),
+    ]),
+  ).toMatchObject({ errores: [], avisos: [] });
 });
 
 test('dificultad sin tilde: error con sugerencia', () => {
@@ -26,13 +43,21 @@ test('falta la dificultad o no existe', () => {
 });
 
 test('ids repetidos', () => {
-  expect(validar([buena(), buena({ enunciado: 'Otra' })]).errores).toEqual([expect.stringContaining('ya lo usa la pregunta 1')]);
+  expect(validar([buena(), buena({ enunciado: 'Otra' })]).errores).toEqual([
+    expect.stringContaining('ya lo usa la pregunta 1'),
+  ]);
 });
 
 test('la clave debe existir entre las opciones', () => {
-  expect(validar([buena({ correcta: 'E' })]).errores).toEqual([expect.stringContaining('la clave es E, pero esa opción no existe')]);
-  expect(validar([buena({ correcta: 'b' })]).errores).toEqual([expect.stringContaining('¿quisiste decir "B"?')]);
-  expect(validar([buena({ correcta: undefined })]).errores).toEqual([expect.stringContaining('falta "correcta"')]);
+  expect(validar([buena({ correcta: 'E' })]).errores).toEqual([
+    expect.stringContaining('la clave es E, pero esa opción no existe'),
+  ]);
+  expect(validar([buena({ correcta: 'b' })]).errores).toEqual([
+    expect.stringContaining('¿quisiste decir "B"?'),
+  ]);
+  expect(validar([buena({ correcta: undefined })]).errores).toEqual([
+    expect.stringContaining('falta "correcta"'),
+  ]);
 });
 
 test('opciones obligatorias, vacías o con letras que no existen', () => {
@@ -68,14 +93,16 @@ test('avisos: sin explicación, campo mal escrito, enunciado repetido y curso es
 
 test('resumen por curso y dificultad', () => {
   const { resumen } = validar([
-    buena(), buena({ id: 'p2', enunciado: 'b', dificultad: 'Fácil' }),
+    buena(),
+    buena({ id: 'p2', enunciado: 'b', dificultad: 'Fácil' }),
     buena({ id: 'p3', enunciado: 'c', curso: 'Cardiología', dificultad: 'Difícil', ejemplo: true }),
   ]);
   expect(resumen).toEqual({
-    total: 3, ejemplos: 1,
+    total: 3,
+    ejemplos: 1,
     porCurso: {
-      'Pediatría': { 'Fácil': 1, Media: 1, 'Difícil': 0, otra: 0, total: 2 },
-      'Cardiología': { 'Fácil': 0, Media: 0, 'Difícil': 1, otra: 0, total: 1 },
+      Pediatría: { Fácil: 1, Media: 1, Difícil: 0, otra: 0, total: 2 },
+      Cardiología: { Fácil: 0, Media: 0, Difícil: 1, otra: 0, total: 1 },
     },
   });
 });

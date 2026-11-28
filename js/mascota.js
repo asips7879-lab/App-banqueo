@@ -22,7 +22,7 @@ function mascot(stage, equip, md, cls) {
  <ellipse cx="78" cy="78" rx="18" ry="8" fill="#fff" opacity=".25" transform="rotate(-25 78 78)"/>`;
   if (stage === 1)
     s +=
-      '<circle cx="92" cy="112" r="3" fill="#9f1239"/><circle cx="108" cy="106" r="3" fill="#9f1239"/><circle cx="104" cy="120" r="3" fill="#9f1239"/>';
+      '<circle cx="100" cy="89" r="3" fill="#9f1239"/><circle cx="92" cy="110" r="3" fill="#9f1239"/><circle cx="108" cy="111" r="3" fill="#9f1239"/>';
   if (stage >= 2)
     s += `<path d="M50 140 Q100 156 150 140 L160 186 H40 Z" fill="#fff" stroke="#c8d6d8" stroke-width="2"/><path d="M100 152 L86 186 M100 152 L114 186" stroke="#c8d6d8" stroke-width="3"/><rect x="122" y="160" width="18" height="12" rx="3" fill="#bae6fd"/>`;
   if (stage >= 3)

@@ -62,9 +62,14 @@ function vTienda() {
   );
   $('#padd').onsubmit = (e) => {
     e.preventDefault();
+    const nombre = $('#pn').value.trim();
+    if (!nombre) {
+      toast('Escribe un nombre para el premio');
+      return;
+    }
     S.premios.push({
       id: 'p' + Date.now(),
-      nombre: $('#pn').value.trim(),
+      nombre,
       costo: Math.max(1, +$('#pc').value),
     });
     save();

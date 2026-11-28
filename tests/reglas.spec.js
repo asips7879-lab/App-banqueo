@@ -67,7 +67,9 @@ test('al llegar a una etapa nueva, la mascota evoluciona', async ({ app }) => {
 
 test('misiones: cada una se reclama una vez y el cofre se abre al tenerlas todas', async ({ app, page }) => {
   await app.abrir({
-    estado: neutro({ daily: { date: HOY, n: 10, ok: 7, run: 5, courses: ['Pediatría', 'Cardiología'], rev: 3, claimed: [] } }),
+    estado: neutro({
+      daily: { date: HOY, n: 10, ok: 7, run: 5, courses: ['Pediatría', 'Cardiología'], rev: 3, claimed: [] },
+    }),
   });
   await expect(page.locator('[data-claim="all"]')).toBeDisabled();
   for (const id of ['m1', 'm2', 'm3', 'm4', 'm5']) {
@@ -85,7 +87,11 @@ test('misiones: cada una se reclama una vez y el cofre se abre al tenerlas todas
 });
 
 test('una misión sin cumplir no se puede reclamar y muestra su avance', async ({ app, page }) => {
-  await app.abrir({ estado: neutro({ daily: { date: HOY, n: 3, ok: 1, run: 1, courses: ['Pediatría'], rev: 0, claimed: [] } }) });
+  await app.abrir({
+    estado: neutro({
+      daily: { date: HOY, n: 3, ok: 1, run: 1, courses: ['Pediatría'], rev: 0, claimed: [] },
+    }),
+  });
   const m1 = page.locator('.mission', { hasText: 'Responde 10 preguntas' });
   await expect(m1).toContainText('3/10 · +30 monedas');
   await expect(m1.locator('button')).toBeDisabled();
@@ -99,22 +105,36 @@ test('las misiones avanzan al banquear', async ({ app, page }) => {
   await page.locator('#quit').click();
   await app.empezar({ curso: 'Cardiología' });
   await app.responder();
-  expect((await app.estado()).daily).toMatchObject({ date: HOY, n: 2, ok: 2, run: 2, courses: ['Pediatría', 'Cardiología'] });
+  expect((await app.estado()).daily).toMatchObject({
+    date: HOY,
+    n: 2,
+    ok: 2,
+    run: 2,
+    courses: ['Pediatría', 'Cardiología'],
+  });
   await app.ir('inicio');
   await expect(page.locator('.mission', { hasText: 'Banquea 2 cursos distintos' })).toContainText('2/2');
 });
 
 test('al cambiar de día se reinician las misiones', async ({ app, page }) => {
-  await app.abrir({ estado: neutro({ daily: { date: dia(-1), n: 10, ok: 7, run: 5, courses: [], rev: 0, claimed: ['m1'] } }) });
+  await app.abrir({
+    estado: neutro({ daily: { date: dia(-1), n: 10, ok: 7, run: 5, courses: [], rev: 0, claimed: ['m1'] } }),
+  });
   const m1 = page.locator('.mission', { hasText: 'Responde 10 preguntas' });
   await expect(m1).toContainText('0/10');
   await expect(m1.locator('button')).toHaveText('Reclamar');
 });
 
-test.fail('ERROR CONOCIDO: la racha de aciertos de ayer no debería contar para la misión de hoy', async ({ app }) => {
-  // SPEC §5: S.run no se reinicia al cambiar de día. Se corrige en la fase 3
-  // (entonces se quita el ".fail" y esta prueba debe pasar).
-  await app.abrir({ estado: neutro({ run: 4, bestRun: 4, daily: { date: dia(-1), n: 4, ok: 4, run: 4, courses: [], rev: 0, claimed: [] } }) });
+test('la racha de aciertos de ayer no cuenta para la misión de hoy (corregido en la fase 3)', async ({
+  app,
+}) => {
+  await app.abrir({
+    estado: neutro({
+      run: 4,
+      bestRun: 4,
+      daily: { date: dia(-1), n: 4, ok: 4, run: 4, courses: [], rev: 0, claimed: [] },
+    }),
+  });
   await app.empezar();
   await app.responder();
   expect((await app.estado()).daily.run).toBe(1);
@@ -138,7 +158,11 @@ test('racha de días: vuelve a 1 si se saltó un día', async ({ app }) => {
   expect(await app.estado()).toMatchObject({ streak: 1, lastDay: HOY });
 });
 
-for (const [lastDay, mostrada] of [[HOY, '5'], [dia(-1), '5'], [dia(-2), '0']]) {
+for (const [lastDay, mostrada] of [
+  [HOY, '5'],
+  [dia(-1), '5'],
+  [dia(-2), '0'],
+]) {
   test(`racha mostrada con el último día cumplido ${lastDay}: ${mostrada}`, async ({ app, page }) => {
     await app.abrir({ estado: { streak: 5, lastDay } });
     await expect(page.locator('.card', { hasText: 'Tu día' }).locator('.stat').nth(2)).toHaveText(mostrada);
@@ -178,9 +202,14 @@ test('Progreso: tarjetas, aciertos por curso y logros', async ({ app, page }) =>
   await app.abrir({
     vista: 'progreso',
     estado: {
-      total: 19, ok: 11, bestRun: 6, streak: 2, lastDay: HOY, logros: ['l1', 'l2'],
+      total: 19,
+      ok: 11,
+      bestRun: 6,
+      streak: 2,
+      lastDay: HOY,
+      logros: ['l1', 'l2'],
       canjes: [{ nombre: 'Algo', costo: 10, fecha: HOY }],
-      course: { 'Pediatría': { n: 10, ok: 8 }, 'Cardiología': { n: 4, ok: 2 }, 'Salud Pública': { n: 5, ok: 1 } },
+      course: { Pediatría: { n: 10, ok: 8 }, Cardiología: { n: 4, ok: 2 }, 'Salud Pública': { n: 5, ok: 1 } },
     },
   });
   await expect(page.locator('#view .stat')).toHaveText(['19', '58%', '6', '2', '1']);
@@ -197,4 +226,40 @@ test('Progreso: tarjetas, aciertos por curso y logros', async ({ app, page }) =>
 test('Progreso sin datos muestra un mensaje', async ({ app, page }) => {
   await app.abrir({ vista: 'progreso' });
   await expect(page.locator('#view')).toContainText('Aún no hay datos');
+});
+
+test('la racha de aciertos del día se reinicia al fallar, pero conserva la mejor del día', async ({
+  app,
+}) => {
+  await app.abrir({ estado: neutro() });
+  await app.empezar({ cantidad: 10 });
+  await app.responderVarias(3);
+  await app.responder({ acertar: false });
+  await app.siguiente();
+  await app.responder();
+  expect((await app.estado()).daily).toMatchObject({ run: 3, runHoy: 1 });
+});
+
+test('la racha de aciertos sigue contando entre días para el récord y el bono de 5', async ({ app }) => {
+  await app.abrir({
+    estado: neutro({
+      run: 4,
+      bestRun: 4,
+      daily: { date: dia(-1), n: 4, ok: 4, run: 4, courses: [], rev: 0, claimed: [] },
+    }),
+  });
+  await app.empezar();
+  await app.responder();
+  await expect(app.toasts()).toContainText('5 aciertos seguidos · +10');
+  expect(await app.estado()).toMatchObject({ run: 5, bestRun: 5 });
+});
+
+test('los resultados separan las monedas ganadas por logros', async ({ app, page }) => {
+  await app.abrir({ estado: { logros: LOGROS.filter((l) => l !== 'l1') } });
+  await app.empezar({ curso: 'Pediatría', dificultad: 'Difícil' }); // solo f03: +8 monedas, +18 XP
+  await app.responder(); // y el logro "Primera pregunta": +50
+  await app.siguiente();
+  await expect(page.locator('#view p.mute').first()).toHaveText(
+    '+58 monedas (incluye +50 por logros) · +18 XP',
+  );
 });

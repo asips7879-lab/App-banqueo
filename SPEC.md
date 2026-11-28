@@ -53,7 +53,7 @@ Especificación técnica de la aplicación de banqueo de preguntas médicas. Re�
 | Estilos | CSS propio con variables y `light-dark()` | Soporta tema claro y oscuro (también `data-theme="light"`/`"dark"` en `<html>`). |
 | Navegación | Rutas por hash | `#inicio`, `#banquear`, `#repaso`, `#tienda`, `#progreso`, `#ajustes`. |
 | Hosting en línea | Artifact de claude.ai | Publicado desde los dos archivos (`index.html` + `preguntas.js`). Corre en un iframe con CSP: no permite `alert/confirm/prompt`, descargas, ni `fetch` a otros dominios. Por eso los diálogos están construidos dentro de la página y el respaldo es por texto copiable. |
-| Pruebas | Playwright (`@playwright/test` 1.63.0, solo para desarrollo) | Suite en `tests/` (`npm test`): 217 pruebas (24 de noviembre de 2026) por `http://` y por `file://`, con banco de prueba propio, fecha simulada y 0 errores de consola exigidos. Más capturas para revisión visual (`npm run capturas`). Ver sección 7. |
+| Pruebas | Playwright (`@playwright/test` 1.63.0, solo para desarrollo) | Suite en `tests/` (`npm test`): 255 pruebas (28 de noviembre de 2026) por `http://` y por `file://`, con banco de prueba propio, fecha simulada y 0 errores de consola exigidos. Más capturas para revisión visual (`npm run capturas`). Ver sección 7. |
 | Validador del banco | `scripts/validar.js` (Node, sin dependencias) | `npm run validar`: resumen por curso y dificultad, errores (formato, tildes, clave, ids) y avisos (sin explicación, cursos escritos de dos formas). |
 
 **Paleta (variables CSS):**
@@ -74,7 +74,7 @@ Especificación técnica de la aplicación de banqueo de preguntas médicas. Re�
 
 **Diseño responsive.**
 - En móvil la barra de navegación está fija abajo, con íconos.
-- Desde 900 px pasa a la parte superior derecha del encabezado, solo texto, y el encabezado reserva espacio a la derecha.
+- Desde 1024 px pasa a la parte superior derecha del encabezado, solo texto, y el encabezado reserva espacio a la derecha. (Hasta la fase 2 era desde 900 px; entre 900 y 1023 px los enlaces chocaban con el nivel y las monedas.)
 - Bajo 640 px el hero se apila en una columna, con la mascota primero.
 - Las animaciones se desactivan con `prefers-reduced-motion`.
 
@@ -193,13 +193,16 @@ El texto "N preguntas coinciden" se actualiza al cambiar filtros. El botón Empe
 - Aparece la explicación, la perla (si existe) y la fuente.
 - El encabezado indica "¡Correcto!" o "Incorrecto · la respuesta es X", y si aplica, el bono de seguridad o el error peligroso.
 - El selector de confianza se oculta y el botón cambia a "Siguiente" o "Ver resultados".
+- **Hemi reacciona** en la esquina de la explicación: sonríe y salta (`.hop`) al acertar; pone la boca recta al fallar. Lleva sus accesorios puestos. No aparece en la revisión de resultados.
 
 **Modo simulacro:**
-- Tiempo total = 72 segundos × número de preguntas, con cuenta regresiva visible. Al llegar a 0 se termina solo.
+- Tiempo total = `SIM_SEGUNDOS` (72, en `js/reglas.js`) × número de preguntas, con cuenta regresiva visible. Al llegar a 0 se termina solo.
 - No hay explicación inmediata: al responder pasa a la siguiente.
 - Las recompensas se calculan igual en cada respuesta.
 
-**Modo repaso:** se entra desde `#repaso` y usa la misma pantalla que práctica.
+**Modo repaso:** se entra desde `#repaso` y usa la misma pantalla que práctica. (El modo `cuaderno` también; ver la sección 3.14.)
+
+**Sesión a medias.** Si se intenta empezar un repaso o un repaso del cuaderno mientras hay un banqueo sin terminar, aparece un aviso dentro de la página: "Tienes un banqueo a medias (n de N respondidas)…", con "Cerrarlo y empezar" o "Volver a mi banqueo". Lo ya respondido queda guardado.
 
 **Atajos de teclado** (solo con una pregunta en pantalla y sin foco en un campo de texto):
 - A–E o 1–5: elegir opción.
@@ -207,17 +210,18 @@ El texto "N preguntas coinciden" se actualiza al cambiar filtros. El botón Empe
 - Enter: confirmar o pasar a la siguiente.
 
 **Resultados:**
-- Muestra la mascota (feliz si ≥70 %, normal si ≥40 %, triste si es menos), "X/N correctas · %", las monedas y XP ganadas en la sesión, y cuántas preguntas pasan al repaso.
+- Muestra la mascota (feliz si ≥70 %, normal si ≥40 %, triste si es menos), "X/N correctas · %", las monedas y XP ganadas en la sesión (con el desglose "incluye +N por logros" si se desbloqueó alguno) y cuántas preguntas pasan al repaso.
 - Debajo hay una revisión pregunta por pregunta en elementos plegables, con la respuesta propia, la correcta y la explicación completa. En simulacro, las falladas aparecen abiertas.
 - Botones: "Nuevo banqueo" y "Ver misiones".
+- Los resultados se cierran al ir a otra vista: al volver a `#banquear` aparece "Arma tu banqueo".
 
 ### 3.7 Repaso espaciado (vista `#repaso`)
 
-- Una pregunta fallada fuera del repaso se agrega con `box: 0`, vence **hoy** y lleva `danger` si se marcó "Seguro". Si ya estaba en seguimiento, se sobrescribe.
+- Una pregunta fallada fuera del repaso se agrega con `box: 0`, vence **hoy** y lleva `danger` si se marcó "Seguro". Si ya estaba en seguimiento, vuelve a `box: 0` y a hoy, **conservando** la marca `danger` que tuviera.
 - La lista de pendientes son las que tienen `due <= hoy`. Los errores peligrosos van primero.
 - **Al responder en modo repaso:**
   - Suma 1 a `daily.rev`, que cuenta para la misión m5.
-  - Si acierta: `box++`. Con `box >= 4` sale del repaso. Si no, `due = hoy + [1,3,7,15][box]` y se quita `danger`.
+  - Si acierta: `box++` (aciertos seguidos en el repaso). Si `box` supera la cantidad de intervalos de `REPASO_DIAS` (`[1, 3, 7, 15]`, en `js/reglas.js`), sale del repaso; si no, `due = hoy + REPASO_DIAS[box - 1]` y se quita `danger`. Es decir: vuelve a los **1, 3, 7 y 15 días** y sale al **5.º acierto seguido**.
   - Si falla: `box = 0`, vence mañana y `danger` se mantiene (o se activa si marcó "Seguro").
 - Acertar una pregunta en seguimiento desde práctica o simulacro **no** cambia su estado de repaso.
 - La vista muestra tres contadores (pendientes para hoy, errores peligrosos y total en seguimiento), el botón "Repasar ahora" y la lista de pendientes.
@@ -228,7 +232,7 @@ El texto "N preguntas coinciden" se actualiza al cambiar filtros. El botón Empe
 |---|---|---|---|---|
 | m1 | Responde 10 preguntas | 10 | `daily.n` | +30 |
 | m2 | Acierta 7 preguntas | 7 | `daily.ok` | +40 |
-| m3 | Encadena 5 aciertos seguidos | 5 | `daily.run` (mejor racha de aciertos del día) | +30 |
+| m3 | Encadena 5 aciertos seguidos | 5 | `daily.run` (mejor racha de aciertos **de hoy**; la racha en curso del día es `daily.runHoy`) | +30 |
 | m4 | Banquea 2 cursos distintos | 2 | `daily.courses.length` | +20 |
 | m5 | Repasa 3 preguntas pendientes | 3 | `daily.rev` | +30 |
 | all | Cofre del día (con todas reclamadas) | — | — | +60 |
@@ -260,7 +264,7 @@ Se revisan después de cada respuesta y de cada reclamo de misión.
 
 **Mis premios** (premios reales que define Jorge):
 - Cada premio muestra nombre, costo y los botones Canjear y Quitar.
-- El formulario "Nuevo premio" pide nombre (obligatorio) y costo (entero ≥ 1, por defecto 200).
+- El formulario "Nuevo premio" pide nombre (obligatorio; si solo tiene espacios avisa "Escribe un nombre para el premio") y costo (entero ≥ 1, por defecto 200).
 - Al canjear aparece un cuadro de confirmación dentro de la página ("¿Canjear '…' por N monedas?" con "Sí, canjear" y "Cancelar"). Al confirmar se descuentan las monedas, se registra en `canjes` y aparece el aviso "¡Disfruta: …!".
 - Historial: últimos 10 canjes.
 - Premios de ejemplo por defecto: "Un episodio de mi serie" (150) y "Mi postre favorito" (300).
@@ -381,7 +385,7 @@ app-banqueo/
 ### Hecho y probado (v1)
 
 - Las seis vistas funcionando: Inicio, Banquear, Repaso, Tienda, Progreso y Ajustes.
-- Mascota con 5 etapas, 3 ánimos y 5 accesorios. Se revisaron visualmente las etapas 0–3; la etapa 4 (birrete) no se revisó en captura.
+- Mascota con 5 etapas, 3 ánimos y 5 accesorios. Se revisaron visualmente las etapas 0–3; la etapa 4 (birrete) se revisó en la fase 1.
 - Modos práctica, simulacro y repaso; botón de confianza; repaso espaciado; misiones con cofre; racha; 8 logros; tienda con premios personales y accesorios; agregar preguntas propias; respaldo y restauración; reinicio.
 - Diseño responsive (probado a 1280×900 y 390×844) y tema claro/oscuro. Sin errores de consola en la prueba automatizada.
 - Publicada como artifact y guardada en `D:\App de banqueo JorG\`.
@@ -393,20 +397,22 @@ app-banqueo/
 2. **Definir los premios reales** en la tienda. Los dos actuales son de ejemplo.
 3. Cada vez que cambie `preguntas.js`, actualizarlo en la carpeta local y republicar el artifact. En el artifact: `publish_files` con slug `da9a291e-67a1-4bf3-a534-d386af43f941`, `base_version` vigente y modo `patch`.
 
-### Errores y detalles conocidos (no corregidos)
+### Errores y detalles conocidos
 
-- **Texto del repaso vs. lógica.** La vista dice que las preguntas vuelven "a los 1, 3, 7 y 15 días", pero el código, al acertar en repaso, hace `box++` antes de indexar `[1,3,7,15][box]`. Los intervalos reales tras cada acierto son **3, 7 y 15 días**, y sale del repaso al 4.º acierto; el valor de 1 día solo se usa tras fallar en repaso. Hay que corregir el texto o el índice.
-- **Fallar en práctica una pregunta que ya está en repaso** reinicia su registro y puede **borrar la marca `danger`** anterior si esta vez se marcó "Dudo".
-- **`daily.run` arrastra la racha de ayer.** La misión m3 usa la racha de aciertos del día, pero `S.run` no se reinicia al cambiar de día. Una racha que empezó ayer puede completar m3 hoy.
-- **Monedas de logros en resultados.** Las monedas de logros y del bono de 5 seguidos se suman a "+N monedas" de la sesión. Las de logros no pasan por `gain()`, así que no disparan el aviso de subida de nivel.
-- **Resultados que se quedan.** Al volver a `#banquear` después de una sesión terminada siguen apareciendo los resultados hasta pulsar "Nuevo banqueo".
-- **Repaso con otra sesión abierta.** Empezar un repaso mientras hay una sesión de práctica a medias la descarta sin aviso.
-- **Animación sin usar en la pregunta.** La clase `.hop` (salto de la mascota) solo se usa en la pantalla de resultados. Se quitó una función `bounce()` vacía y la mascota no aparece durante las preguntas.
-- **Premio con nombre de solo espacios.** *(Detectado en la fase 1.)* El campo es obligatorio, pero `"   "` pasa la validación del navegador y el premio se guarda con nombre vacío.
-- **Detalle visual del reticulocito.** Los puntitos se superponen un poco con la boca.
-- **Navegación de escritorio apretada.** Cerca de 900–1000 px los enlaces quedan muy juntos.
+**No hay errores conocidos pendientes.** Los 10 de la lista se corrigieron en la fase 3 (28 de noviembre de 2026), cada uno con su prueba:
 
-Los errores que se pueden comprobar automáticamente tienen una prueba marcada con `test.fail` ("ERROR CONOCIDO"): describe el comportamiento correcto y hoy falla a propósito. Al corregir cada uno, se quita el `.fail` y la prueba debe pasar.
+| # | Error | Corrección |
+|---|---|---|
+| 1 | El texto del repaso decía "1, 3, 7 y 15 días" pero los intervalos reales eran 3, 7 y 15. | Los intervalos son los que dice el texto (`REPASO_DIAS = [1, 3, 7, 15]`) y la pregunta sale al 5.º acierto seguido. El texto se genera desde esa tabla, así que no puede volver a desalinearse. |
+| 2 | Fallar en práctica una pregunta del repaso podía borrar su marca de error peligroso. | Se conserva la marca. |
+| 3 | La racha de aciertos de ayer contaba para la misión m3 de hoy. | La misión usa `daily.runHoy`, que empieza en 0 cada día. La racha global (`S.run`) sigue contando para el récord y el bono de 5 seguidos. |
+| 4 | Las monedas de logros se sumaban a "+N monedas" de la sesión sin distinguirse y no pasaban por `gain()`. | Los resultados muestran "(incluye +N por logros)". Logros y bono de 5 seguidos pasan por `gain()`. |
+| 5 | Los resultados seguían en `#banquear` después de salir. | Se cierran al ir a otra vista. |
+| 6 | Empezar un repaso con un banqueo a medias lo descartaba sin aviso. | Aviso dentro de la página (también en "Repasar cuaderno"). |
+| 7 | La animación `.hop` no se usaba durante las preguntas y la mascota no aparecía. | Hemi reacciona en la explicación: salta y sonríe al acertar; boca recta al fallar. |
+| 8 | Un premio con nombre de solo espacios se guardaba con nombre vacío. | Se rechaza con un aviso. |
+| 9 | Los puntitos del reticulocito tocaban la boca. | Puntitos reubicados; una prueba mide que no choquen con la boca en los 3 ánimos. |
+| 10 | La navegación de escritorio quedaba apretada entre 900 y 1000 px. | El menú superior aparece desde 1024 px (al menos 77 px de separación con el nivel y las monedas); por debajo se usa la barra inferior con íconos. |
 
 ### Decisiones tomadas (24 de noviembre de 2026)
 
@@ -962,7 +968,7 @@ Acordado el 24 de noviembre de 2026. Se marca cada fase al terminarla.
 - [x] **Fase 0: estructura base y entorno.** Repositorio, versión 1 exacta (md5 verificado), `.gitattributes` (LF), `.editorconfig`, `.gitignore`, `package.json` con `npm run dev` (servidor sin dependencias) y `README.md`.
 - [x] **Fase 1: pruebas y validador.** 191 pruebas con Playwright por `http://` y por `file://`: las 6 vistas, teclado, filtros, simulacro con reloj simulado, reglas (XP, monedas, confianza, repaso, racha, misiones y logros), tienda, ajustes, y el banco real completo. 3 errores conocidos marcados con `test.fail`. Capturas a 390 y 1280 px, modo oscuro y las 5 etapas (la etapa 4 se revisó y se ve bien). Validador `npm run validar` y plantilla en `preguntas.js` (adelantados de la fase 4).
 - [x] **Fase 2: reestructura.** `index.html` separado en `css/estilos.css` y 12 archivos en `js/` (scripts clásicos), con formato legible (Prettier). El comportamiento no cambió: las 191 pruebas pasan igual por `http://` y `file://`. El guardado queda aislado en `js/estado.js` para llevarlo a la nube en la fase 5.
-- [ ] **Fase 3: errores conocidos y Cuaderno de errores.** ✅ **Cuaderno de errores hecho** (sección 3.14), con migración de las "preguntas propias" y sus pruebas. Pendiente: corregir los 10 errores de la sección 5, cada uno con su prueba.
+- [x] **Fase 3: errores conocidos y Cuaderno de errores.** Cuaderno de errores (sección 3.14) con migración de las "preguntas propias". Los 10 errores conocidos corregidos, cada uno con su prueba (tabla en la sección 5). `REPASO_DIAS` y `SIM_SEGUNDOS` quedan como valores ajustables en `js/reglas.js`. 255 pruebas.
 - [ ] **Fase 4: diseño de Hemi y progresión.** Aspecto por etapa, número y nombres de las etapas, curva de XP, logros, accesorios y desbloqueos, según el diseño de Jorge. Calibrar los valores numéricos.
 - [ ] **Fase 5: cuentas y sincronización.** Registro e inicio de sesión (usuario, correo, contraseña y recuperación de contraseña). Progreso, premios y cuaderno guardados por usuario en la nube, con reglas que impiden ver o cambiar datos ajenos. Que funcione sin conexión y sincronice al volver la conexión. Pasar el progreso local existente a la cuenta. Las preguntas siguen en el repositorio. Consecuencias técnicas: la librería del proveedor se incluye como archivo local (sin CDN), y el artifact de claude.ai, que bloquea conexiones a otros dominios, queda solo como vista previa sin cuentas.
 - [ ] **Fase 6: contenido real.** Preguntas de Jorge (pueden cargarse en paralelo desde ya), premios por defecto, borrar las preguntas de ejemplo y calibrar el simulacro con la duración real de los exámenes.

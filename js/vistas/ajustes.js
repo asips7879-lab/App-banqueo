@@ -39,7 +39,7 @@ function vAjustes() {
   };
   const repasoAjustes = listaRepasoCuaderno();
   $('#cu-repasar').disabled = !repasoAjustes.length;
-  $('#cu-repasar').onclick = () => startQuiz(shuffle(repasoAjustes), 'cuaderno');
+  $('#cu-repasar').onclick = () => empezarConAviso(shuffle(repasoAjustes), 'cuaderno', $('#cu-aviso'));
   $('#rst').onclick = () => {
     $('#rstc').innerHTML =
       '<p>Se perderán nivel, monedas, misiones y repaso. Tu cuaderno de errores se conserva. ¿Seguro?</p><button class="btn red" id="rsy">Sí, borrar</button>';
@@ -62,5 +62,5 @@ function tarjetaCuaderno() {
   return `<div class="card" id="cu-card" style="margin-top:14px"><h2>Cuaderno de errores</h2>
  <p class="small mute">Guarda preguntas del banco o de otras fuentes, con tu propia explicación, y repásalas junto con las que fallaste. Solo tú las ves.</p>
  <p><b>${n}</b> pregunta${n === 1 ? '' : 's'} guardada${n === 1 ? '' : 's'}${n ? ` (${deBanco} del banco · ${n - deBanco} externa${n - deBanco === 1 ? '' : 's'})` : ''}</p>
- <div class="row"><a class="btn" href="#cuaderno" style="text-decoration:none">Abrir mi cuaderno</a><button class="btn alt" id="cu-repasar">Repasar cuaderno</button></div></div>`;
+ <div class="row"><a class="btn" href="#cuaderno" style="text-decoration:none">Abrir mi cuaderno</a><button class="btn alt" id="cu-repasar">Repasar cuaderno</button></div><div id="cu-aviso"></div></div>`;
 }

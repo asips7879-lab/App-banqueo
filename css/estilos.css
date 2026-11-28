@@ -482,7 +482,7 @@ svg.mascot {
   font-size: 13px;
   color: var(--mute);
 }
-@media (min-width: 900px) {
+@media (min-width: 1024px) {
   nav {
     position: fixed;
     top: 0;
@@ -631,4 +631,26 @@ svg.mascot {
 }
 .cu-acciones {
   margin-top: 12px;
+}
+
+/* ---------- Hemi al responder y avisos ---------- */
+.fb-hemi {
+  float: right;
+  width: 64px;
+  margin: -6px -4px 6px 10px;
+}
+.fb::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+.aviso {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 2px solid var(--gold);
+}
+.aviso p {
+  margin: 0 0 10px;
 }

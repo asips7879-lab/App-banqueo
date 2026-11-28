@@ -7,7 +7,12 @@ test('los filtros cuentan las coincidencias y desactivan Empezar si no hay', asy
   await app.abrir({ vista: 'banquear' });
   const cuenta = page.locator('#f-count');
   await expect(cuenta).toHaveText('12 preguntas coinciden');
-  await expect(page.locator('#f-cu option')).toHaveText(['Todos', 'Cardiología', 'Pediatría', 'Salud Pública']);
+  await expect(page.locator('#f-cu option')).toHaveText([
+    'Todos',
+    'Cardiología',
+    'Pediatría',
+    'Salud Pública',
+  ]);
   await page.selectOption('#f-di', 'Fácil');
   await expect(cuenta).toHaveText('4 preguntas coinciden');
   await page.selectOption('#f-ex', 'ENAM');
@@ -79,7 +84,9 @@ test('práctica: fallar estando Seguro avisa del error peligroso', async ({ app,
   await app.abrir();
   await app.empezar({ curso: 'Cardiología', dificultad: 'Difícil' }); // solo f06
   await app.responder({ acertar: false, seguro: true });
-  await expect(page.locator('#fb h3')).toHaveText('Incorrecto · la respuesta es A · error peligroso, irá primero a tu repaso');
+  await expect(page.locator('#fb h3')).toHaveText(
+    'Incorrecto · la respuesta es A · error peligroso, irá primero a tu repaso',
+  );
 });
 
 test('atajos 1–5; si la pregunta no tiene opción E, la E no se puede elegir', async ({ app, page }) => {
@@ -113,7 +120,10 @@ test('Terminar a mitad muestra los resultados de lo respondido', async ({ app, p
   await expect(page.locator('#view h1')).toHaveText('Arma tu banqueo');
 });
 
-test('simulacro: sin explicación, con cronómetro, y termina solo al acabarse el tiempo', async ({ app, page }) => {
+test('simulacro: sin explicación, con cronómetro, y termina solo al acabarse el tiempo', async ({
+  app,
+  page,
+}) => {
   await app.abrir({ reloj: true });
   await app.empezar({ curso: 'Pediatría', modo: 'simulacro' }); // 4 preguntas × 72 s = 4:48
   await expect(page.getByText('Simulacro · 1/4')).toBeVisible();
@@ -131,4 +141,30 @@ test('simulacro: sin explicación, con cronómetro, y termina solo al acabarse e
   // En simulacro, las falladas aparecen abiertas en la revisión.
   await expect(page.locator('details')).toHaveCount(2);
   await expect(page.locator('details[open]')).toHaveCount(1);
+});
+
+test('al salir de los resultados, Banquear vuelve a empezar de cero', async ({ app, page }) => {
+  await app.abrir();
+  await app.empezar({ curso: 'Pediatría', dificultad: 'Difícil' });
+  await app.responder();
+  await app.siguiente();
+  await expect(page.locator('#view h1')).toHaveText('1/1 correctas · 100%');
+  await page.getByRole('link', { name: 'Ver misiones' }).click();
+  await app.ir('banquear');
+  await expect(page.locator('#view h1')).toHaveText('Arma tu banqueo');
+});
+
+test('Hemi reacciona al responder: salta al acertar y no aparece en la revisión', async ({ app, page }) => {
+  await app.abrir();
+  await app.empezar({ curso: 'Pediatría' });
+  await app.responder();
+  await expect(page.locator('#fb .fb-hemi svg.hop')).toHaveCount(1);
+  await expect(page.locator('#fb .fb-hemi path[d^="M84 120"]')).toHaveCount(1); // sonríe
+  await app.siguiente();
+  await app.responder({ acertar: false });
+  await expect(page.locator('#fb .fb-hemi svg.hop')).toHaveCount(0);
+  await expect(page.locator('#fb .fb-hemi path[d^="M88 125"]')).toHaveCount(1); // boca recta
+  await app.siguiente();
+  await page.locator('#quit').click();
+  await expect(page.locator('.rev-fb .fb-hemi')).toHaveCount(0);
 });
