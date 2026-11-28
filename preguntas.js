@@ -1,9 +1,34 @@
 // =====================================================================
 //  BANCO DE PREGUNTAS — Banqueo JorG
-//  Cada pregunta sigue este formato. Las marcadas con ejemplo:true son
-//  de demostración y se pueden borrar cuando empiecen a llegar las tuyas.
-//  examen: cualquier combinación de "ENAM", "RM", "Preinternado"
-//  dificultad: "Fácil" | "Media" | "Difícil"
+//
+//  Las marcadas con ejemplo:true son de demostración: bórralas cuando
+//  empiecen a llegar las tuyas.
+//
+//  PARA AGREGAR UNA PREGUNTA: copia la plantilla de abajo (sin las //),
+//  pégala justo antes del "];" del final del archivo y rellénala.
+//  Cada pregunta va entre { } y termina con una coma.
+//
+//  {
+//    id: "ped-001",                  // único. Sugerencia: 3 letras del curso + número
+//    examen: ["ENAM", "RM", "Preinternado"],   // deja solo los que apliquen
+//    curso: "Pediatría",             // escríbelo siempre igual, con tildes
+//    tema: "Exantemas virales",
+//    dificultad: "Media",            // "Fácil" | "Media" | "Difícil" (con tilde)
+//    enunciado: "Texto de la pregunta",
+//    opciones: {
+//      A: "…",
+//      B: "…",
+//      C: "…",
+//      D: "…",
+//      E: "…"                        // opcional: borra esta línea si no hay E
+//    },
+//    correcta: "B",                  // la clave, en mayúscula
+//    explicacion: "",                // si la dejas vacía, Claude la redacta
+//    perla: "",                      // opcional
+//    fuente: ""                      // opcional, p. ej. "ENAM 2024"
+//  },
+//
+//  Después de editar, revisa el formato con:   npm run validar
 // =====================================================================
 window.PREGUNTAS = [
   {

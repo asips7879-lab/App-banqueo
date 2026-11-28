@@ -6,7 +6,7 @@ Especificación técnica de la aplicación de banqueo de preguntas médicas. Re�
 - **Carpeta local original:** `D:\App de banqueo JorG\` (versión 1; queda como respaldo)
 - **Versión en línea (artifact de claude.ai, privada para el dueño):** https://claude.ai/artifact/TzeajyYpZ1y7GojFfmJZYL — slug `da9a291e-67a1-4bf3-a534-d386af43f941`, versión `1795458517-5907`
 - **Doc de estado en el Project de claude.ai:** `claude/app-banqueo-estado.md`
-- **Archivos de código:** `index.html` (toda la app) y `preguntas.js` (banco de preguntas). Los archivos locales y los del artifact son idénticos (md5 `e3fbe363386b3c298a28096e6e39418c` para index.html y `a5d6ed970665e509ccca83cf2c9d43a5` para preguntas.js).
+- **Archivos de código:** `index.html` (toda la app) y `preguntas.js` (banco de preguntas). En la versión 1, los archivos locales y los del artifact eran idénticos (md5 `e3fbe363386b3c298a28096e6e39418c` para index.html y `a5d6ed970665e509ccca83cf2c9d43a5` para preguntas.js; commit `9d895bd` del repositorio).
 
 ---
 
@@ -30,7 +30,11 @@ Especificación técnica de la aplicación de banqueo de preguntas médicas. Re�
 - Jorge indica la **dificultad** y la **clave** de cada pregunta. Claude guarda la pregunta con su respuesta y claves tal como Jorge las dio, y redacta la explicación.
 - Las preguntas se acumulan en `preguntas.js`.
 
-**Requisito de plataforma.** Debe poder usarse en línea, en el navegador.
+**Requisito de plataforma.** Debe poder usarse en celular, navegador y computadora. Es una web adaptable a cualquier pantalla; al final se publica en una dirección pública y como app instalable.
+
+**Quién la usa (decidido el 24 de noviembre de 2026).**
+- **Estudiantes:** cualquier persona con el enlace (o que instale la app) puede usarla, pero primero debe **crear una cuenta** (usuario, correo y contraseña) e iniciar sesión. Su progreso se guarda en su cuenta y se **comparte entre su celular y su PC**.
+- **Moderador (Jorge):** es el **único** que agrega, quita, clasifica y edita preguntas del banco oficial. Otra persona solo puede hacerlo si Jorge le da permiso de forma manual (como colaborador del repositorio en GitHub).
 
 ---
 
@@ -49,7 +53,8 @@ Especificación técnica de la aplicación de banqueo de preguntas médicas. Re�
 | Estilos | CSS propio con variables y `light-dark()` | Soporta tema claro y oscuro (también `data-theme="light"`/`"dark"` en `<html>`). |
 | Navegación | Rutas por hash | `#inicio`, `#banquear`, `#repaso`, `#tienda`, `#progreso`, `#ajustes`. |
 | Hosting en línea | Artifact de claude.ai | Publicado desde los dos archivos (`index.html` + `preguntas.js`). Corre en un iframe con CSP: no permite `alert/confirm/prompt`, descargas, ni `fetch` a otros dominios. Por eso los diálogos están construidos dentro de la página y el respaldo es por texto copiable. |
-| Pruebas usadas | Playwright + Google Chrome (headless) | Se usaron en el entorno de Claude para recorrer todas las vistas, responder preguntas con teclado y revisar errores de consola (resultado: 0 errores). No hay archivos de prueba en el proyecto. |
+| Pruebas | Playwright (`@playwright/test` 1.63.0, solo para desarrollo) | Suite en `tests/` (`npm test`): ~190 pruebas por `http://` y por `file://`, con banco de prueba propio, fecha simulada y 0 errores de consola exigidos. Más capturas para revisión visual (`npm run capturas`). Ver sección 7. |
+| Validador del banco | `scripts/validar.js` (Node, sin dependencias) | `npm run validar`: resumen por curso y dificultad, errores (formato, tildes, clave, ids) y avisos (sin explicación, cursos escritos de dos formas). |
 
 **Paleta (variables CSS):**
 
@@ -95,6 +100,8 @@ Especificación técnica de la aplicación de banqueo de preguntas médicas. Re�
   fuente: "..."              // opcional (p. ej. "ENAM 2024")
 }
 ```
+
+Al inicio de `preguntas.js` hay una plantilla comentada lista para copiar. El formato se revisa con `npm run validar`.
 
 El banco completo en uso es `allQ() = [...window.PREGUNTAS, ...S.custom]`. Es decir, las preguntas de `preguntas.js` más las que el usuario agregó desde Ajustes, que se guardan en su navegador.
 
@@ -280,7 +287,7 @@ Al comprar se equipa automáticamente. Después el botón alterna entre "Puesto"
 
 - **Nombre de la mascota.**
 - **Copia de seguridad:** caja de solo lectura con el JSON del estado y botón Copiar (`navigator.clipboard`; si falla, avisa "Selecciona y copia manualmente"). Para restaurar se pega el texto; es válido solo si es un objeto con `xp`. Si no, avisa "Ese texto no es una copia válida".
-- **Agregar pregunta propia:**
+- **Agregar pregunta propia** *(se reemplaza en la fase 3 por el **Cuaderno de errores**, sección 3.14; también desaparece el botón "Copiar para enviar a Claude")*:
   - Campos: exámenes (casillas, las tres marcadas por defecto), curso (obligatorio, con sugerencias de cursos existentes), tema, dificultad (por defecto Media), enunciado (obligatorio), opciones A–D (obligatorias) y E (opcional), clave, fuente (por defecto "Propia"), explicación (obligatoria) y perla.
   - Validación: la clave elegida debe tener texto.
   - Se guarda en `S.custom` con id `u{timestamp}`.
@@ -290,6 +297,19 @@ Al comprar se equipa automáticamente. Después el botón alterna entre "Puesto"
 ### 3.13 Avisos (toasts)
 
 Aparecen arriba a la derecha (`aria-live="polite"`) y desaparecen a los 3.2 s. Se usan para subida de nivel, evolución, logros, bonos, racha, canjes, guardado y errores de validación.
+
+### 3.14 Cuaderno de errores *(propuesta, por confirmar; se construye en la fase 3)*
+
+Reemplaza a "Agregar pregunta propia". Es un espacio **personal** del estudiante, distinto de lo que hace el moderador: el estudiante **no** agrega preguntas a la app.
+
+- **Registro automático.** Cada pregunta del banco que el estudiante falla entra a su cuaderno con la fecha, su respuesta, la clave y la explicación. Si la vuelve a fallar, se suma al contador de veces fallada.
+- **Nota personal.** Cada entrada tiene un campo libre ("por qué me equivoqué", "qué debo recordar").
+- **Anotaciones manuales (privadas).** El estudiante puede anotar errores de otras fuentes, como un simulacro externo o un examen pasado. Anota el enunciado, su respuesta, la correcta, el curso y una nota. **Solo las ve él**: nunca entran al banco oficial ni las ven otros usuarios.
+- **Organización.** Filtro por curso, búsqueda por texto y la opción "Ya lo domino" para archivar.
+- **Práctica.** El botón "Practicar mis errores" arma un banqueo con las preguntas del banco que están en el cuaderno.
+- **Diferencia con Repaso.** El repaso programa cuándo volver a ver una pregunta y la saca cuando la domina. El cuaderno es un registro permanente con las notas del estudiante.
+- **Dónde va.** Hay que decidirlo en el diseño, porque en el celular la barra ya tiene 6 íconos: puede ser una pestaña dentro de Repaso o una séptima sección.
+- **Cuentas.** A partir de la fase 5 se guarda en la cuenta del estudiante y se sincroniza entre sus dispositivos.
 
 ---
 
@@ -303,9 +323,16 @@ app-banqueo/
 ├── preguntas.js        ← banco: window.PREGUNTAS = [...] (111 líneas)
 ├── SPEC.md             ← este documento
 ├── README.md           ← cómo abrir, clonar y agregar preguntas
-├── package.json        ← solo scripts de desarrollo; la app no tiene dependencias
+├── package.json        ← scripts de desarrollo (dev, test, capturas, validar); la app no tiene dependencias
+├── playwright.config.js ← proyectos de prueba: http, file y capturas
 ├── scripts/
-│   └── servidor.js     ← servidor local sin dependencias (`npm run dev`, puerto 8080)
+│   ├── servidor.js     ← servidor local sin dependencias (`npm run dev`, puerto 8080)
+│   └── validar.js      ← validador del banco de preguntas (`npm run validar`)
+├── tests/
+│   ├── ayudantes.js    ← abrir la app con estado, fecha y banco dados; responder; vigilar la consola
+│   ├── banco-prueba.js ← 12 preguntas solo para pruebas (3 cursos × 4, 4 por dificultad)
+│   ├── *.spec.js       ← navegacion, banqueo, reglas, repaso, tienda, ajustes, banco-real, validar
+│   └── capturas.spec.js ← capturas para revisar a ojo (salen en tests/capturas/, no se suben)
 ├── .gitattributes      ← fuerza saltos de línea LF (también en Windows)
 ├── .editorconfig       ← UTF-8, LF, 2 espacios
 └── .gitignore
@@ -378,20 +405,31 @@ app-banqueo/
 - **Resultados que se quedan.** Al volver a `#banquear` después de una sesión terminada siguen apareciendo los resultados hasta pulsar "Nuevo banqueo".
 - **Repaso con otra sesión abierta.** Empezar un repaso mientras hay una sesión de práctica a medias la descarta sin aviso.
 - **Animación sin usar en la pregunta.** La clase `.hop` (salto de la mascota) solo se usa en la pantalla de resultados. Se quitó una función `bounce()` vacía y la mascota no aparece durante las preguntas.
+- **Premio con nombre de solo espacios.** *(Detectado en la fase 1.)* El campo es obligatorio, pero `"   "` pasa la validación del navegador y el premio se guarda con nombre vacío.
 - **Detalle visual del reticulocito.** Los puntitos se superponen un poco con la boca.
 - **Navegación de escritorio apretada.** Cerca de 900–1000 px los enlaces quedan muy juntos.
+
+Los errores que se pueden comprobar automáticamente tienen una prueba marcada con `test.fail` ("ERROR CONOCIDO"): describe el comportamiento correcto y hoy falla a propósito. Al corregir cada uno, se quita el `.fail` y la prueba debe pasar.
 
 ### Decisiones tomadas (24 de noviembre de 2026)
 
 - **Dónde vive el código:** repositorio privado de GitHub `asips7879-lab/App-banqueo`. Cada fase se guarda con commits.
 - **Arquitectura:** separar en varios archivos con scripts clásicos (ver la sección 4). Se hace en la fase 2, después de las pruebas.
-- **Pruebas y validador:** se agregan pruebas con Playwright y un validador del banco de preguntas. Son solo herramientas de desarrollo; la app sigue sin dependencias.
+- **Pruebas y validador:** se agregan pruebas con Playwright y un validador del banco de preguntas. Son solo herramientas de desarrollo; la app sigue sin dependencias. El validador se adelantó a la fase 1 porque Jorge irá agregando preguntas (con su curso y dificultad) directamente en `preguntas.js`.
+- **Uso público con cuentas:** cualquiera con el enlace puede usar la app, pero tiene que crear una cuenta e iniciar sesión.
+- **Sincronización:** el progreso de cada estudiante se guarda en la nube y se comparte entre su celular y su PC.
+- **Moderación del banco:** solo Jorge edita las preguntas. Siguen en `preguntas.js`, dentro del repositorio privado. Para dar permiso a otra persona se la invita en GitHub (*Settings → Collaborators*), sin compartir la contraseña. Separar preguntas (en el repositorio) y progreso (en la nube) cumple esta regla sin necesidad de un panel de administración.
+- **Cuaderno de errores:** reemplaza a "Agregar pregunta propia" (ver la sección 3.14).
+- **Mascota:** se mantiene el nombre **Hemi**. Su aspecto y su progresión (etapas, logros, mejoras) los define Jorge en una fase propia.
+- **Publicación al final:** dirección pública (Cloudflare Pages o Netlify, conectados al repositorio privado) y app instalable, cuando la app esté terminada.
 
 ### Decisiones abiertas
 
-- **Sincronización entre dispositivos.** Hoy el progreso vive en cada navegador por separado (artifact y archivo local no comparten datos). Queda por decidir si se añade un backend o base de datos con cuentas.
+- **Proveedor de cuentas y base de datos.** Se recomienda **Supabase**: registro con correo y contraseña, recuperación de contraseña, base de datos con reglas para que cada usuario solo vea y cambie lo suyo, y plan gratuito. La alternativa es Firebase. Se confirma al empezar la fase 5, revisando las condiciones vigentes del plan gratuito.
+- **Detalles del Cuaderno de errores.** Hay que confirmar la propuesta de la sección 3.14 (en especial, las anotaciones manuales y dónde va en la navegación).
+- **Diseño de Hemi y su progresión.** Pendiente de lo que defina Jorge.
+- **Aviso de privacidad.** Al guardar correos y progreso de personas en Perú aplica la Ley 29733 de Protección de Datos Personales. Antes de publicar hay que preparar un aviso de privacidad y términos de uso.
 - **Valores numéricos.** Los precios de accesorios, las recompensas por dificultad, el tiempo del simulacro (72 s por pregunta), los umbrales de etapas y los logros los propuso Claude; **Jorge no los ha confirmado**.
-- **Uso por otros estudiantes.** El objetivo menciona a "aquellos que piensan postular", pero no se ha definido si será una app personal o pública (eso afecta cuentas, banco compartido y hosting).
 - **Duración real de los exámenes.** No se verificó contra ENAM, RM ni EsSalud para calibrar el simulacro.
 
 ---
@@ -925,8 +963,10 @@ window.PREGUNTAS = [
 Acordado el 24 de noviembre de 2026. Se marca cada fase al terminarla.
 
 - [x] **Fase 0: estructura base y entorno.** Repositorio, versión 1 exacta (md5 verificado), `.gitattributes` (LF), `.editorconfig`, `.gitignore`, `package.json` con `npm run dev` (servidor sin dependencias) y `README.md`.
-- [ ] **Fase 1: pruebas.** Playwright: recorrido de las 6 vistas por `http://` y por `file://`, respuestas con teclado y 0 errores de consola. Reglas (XP, monedas, confianza, repaso, racha, misiones y logros) con fecha simulada. Capturas a 390 y 1280 px, incluida la etapa 4 (birrete).
-- [ ] **Fase 2: reestructura.** Separar en `css/` y `js/` con scripts clásicos y formato legible, sin cambiar el comportamiento: las pruebas de la fase 1 deben seguir pasando.
-- [ ] **Fase 3: errores conocidos.** Corregir los 9 de la sección 5, cada uno con su prueba.
-- [ ] **Fase 4: contenido y publicación.** Validador del banco (`npm run validar`), preguntas y premios reales, y republicar el artifact en el mismo enlace.
-- [ ] **Fase 5: decisiones de producto.** Sincronización o backend, uso público, y calibrar valores y tiempos contra los exámenes reales.
+- [x] **Fase 1: pruebas y validador.** 191 pruebas con Playwright por `http://` y por `file://`: las 6 vistas, teclado, filtros, simulacro con reloj simulado, reglas (XP, monedas, confianza, repaso, racha, misiones y logros), tienda, ajustes, y el banco real completo. 3 errores conocidos marcados con `test.fail`. Capturas a 390 y 1280 px, modo oscuro y las 5 etapas (la etapa 4 se revisó y se ve bien). Validador `npm run validar` y plantilla en `preguntas.js` (adelantados de la fase 4).
+- [ ] **Fase 2: reestructura.** Separar en `css/` y `js/` con scripts clásicos y formato legible, sin cambiar el comportamiento: las pruebas de la fase 1 deben seguir pasando. El guardado queda aislado en `js/estado.js` para poder llevarlo a la nube en la fase 5.
+- [ ] **Fase 3: errores conocidos y Cuaderno de errores.** Corregir los 10 errores de la sección 5, cada uno con su prueba. Reemplazar "Agregar pregunta propia" por el Cuaderno de errores (sección 3.14).
+- [ ] **Fase 4: diseño de Hemi y progresión.** Aspecto por etapa, número y nombres de las etapas, curva de XP, logros, accesorios y desbloqueos, según el diseño de Jorge. Calibrar los valores numéricos.
+- [ ] **Fase 5: cuentas y sincronización.** Registro e inicio de sesión (usuario, correo, contraseña y recuperación de contraseña). Progreso, premios y cuaderno guardados por usuario en la nube, con reglas que impiden ver o cambiar datos ajenos. Que funcione sin conexión y sincronice al volver la conexión. Pasar el progreso local existente a la cuenta. Las preguntas siguen en el repositorio. Consecuencias técnicas: la librería del proveedor se incluye como archivo local (sin CDN), y el artifact de claude.ai, que bloquea conexiones a otros dominios, queda solo como vista previa sin cuentas.
+- [ ] **Fase 6: contenido real.** Preguntas de Jorge (pueden cargarse en paralelo desde ya), premios por defecto, borrar las preguntas de ejemplo y calibrar el simulacro con la duración real de los exámenes.
+- [ ] **Fase 7: publicación.** Dirección pública (Cloudflare Pages o Netlify desde el repositorio privado), app instalable (ícono, pantalla completa, uso sin conexión), aviso de privacidad y términos, y dominio propio opcional.
