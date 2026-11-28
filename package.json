@@ -8,12 +8,14 @@
     "dev": "node scripts/servidor.js",
     "test": "playwright test --project=http --project=file",
     "capturas": "playwright test --project=capturas",
-    "validar": "node scripts/validar.js"
+    "validar": "node scripts/validar.js",
+    "formato": "prettier --write css js"
   },
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0"
+    "@playwright/test": "1.63.0",
+    "prettier": "3.8.1"
   }
 }

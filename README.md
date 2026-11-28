@@ -39,17 +39,18 @@ La carpeta antigua `D:\App de banqueo JorG\` tiene la misma versión 1. Puedes g
 ## Estructura
 
 ```
-index.html            app completa: HTML + CSS + JS
+index.html            estructura de la página y lista de scripts
+css/estilos.css       estilos
+js/                   código de la app (reglas, estado, mascota, vistas…)
 preguntas.js          banco de preguntas (window.PREGUNTAS = [...]), con plantilla al inicio
 SPEC.md               especificación y plan de trabajo
 scripts/servidor.js   servidor local para `npm run dev`
 scripts/validar.js    validador del banco (`npm run validar`)
 tests/                pruebas automáticas (Playwright)
-playwright.config.js  configuración de las pruebas
 package.json          scripts de desarrollo (la app no tiene dependencias)
 ```
 
-En la fase 2 del plan, `index.html` se separará en `css/` y `js/`. Lo hará con scripts clásicos para que siga funcionando con doble clic.
+El detalle de cada archivo de `js/` está en la sección 4 de `SPEC.md`.
 
 ## Agregar preguntas
 
@@ -68,7 +69,7 @@ npm run validar
 
 El validador muestra cuántas preguntas hay por curso y dificultad. También avisa de los errores típicos y dice dónde están: una tilde faltante, una coma olvidada, una clave que no existe, un id repetido o un curso escrito de dos formas.
 
-Las preguntas propias que agregues desde **Ajustes** se quedan en tu navegador. Para pasarlas al banco oficial, usa el botón **Copiar para enviar a Claude**.
+Solo el moderador agrega preguntas al banco. Los estudiantes tienen su **Cuaderno de errores** (en **Ajustes**). Ahí guardan preguntas del banco, desde la revisión al terminar un banqueo, o preguntas externas, siempre con su propia explicación, y las repasan junto con las que fallaron. Esas preguntas nunca entran al banco oficial.
 
 ## Pruebas
 
