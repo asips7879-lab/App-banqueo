@@ -15,7 +15,9 @@ test('sin monedas suficientes no se puede canjear ni comprar', async ({ app, pag
 test('canjear un premio pide confirmación y lo registra', async ({ app, page }) => {
   await app.abrir({ vista: 'tienda', estado: { coins: 200 } });
   await page.locator('[data-buy="p1"]').click();
-  await expect(page.locator('#confirmBox')).toContainText('¿Canjear “Un episodio de mi serie” por 150 monedas?');
+  await expect(page.locator('#confirmBox')).toContainText(
+    '¿Canjear “Un episodio de mi serie” por 150 monedas?',
+  );
   await page.locator('#cn').click();
   await expect(page.locator('#confirmBox')).toBeEmpty();
   expect((await app.estado()).coins).toBe(200);
@@ -24,7 +26,9 @@ test('canjear un premio pide confirmación y lo registra', async ({ app, page })
   await page.locator('#cy').click();
   await expect(app.toasts()).toContainText('¡Disfruta: Un episodio de mi serie!');
   await expect(page.locator('#h-coins')).toHaveText('50');
-  expect((await app.estado()).canjes).toEqual([{ nombre: 'Un episodio de mi serie', costo: 150, fecha: HOY }]);
+  expect((await app.estado()).canjes).toEqual([
+    { nombre: 'Un episodio de mi serie', costo: 150, fecha: HOY },
+  ]);
   await expect(page.locator('#view')).toContainText(`${HOY} · Un episodio de mi serie · 150`);
 });
 
@@ -48,12 +52,11 @@ test('un premio sin nombre no se agrega', async ({ app, page }) => {
   expect(await app.estado()).toBeNull(); // el formulario no se envió: nada se guardó
 });
 
-test.fail('ERROR DETECTADO EN LA FASE 1: un premio con nombre de solo espacios no debería agregarse', async ({ app, page }) => {
-  // El campo es obligatorio, pero "   " pasa la validación del navegador y se guarda con nombre vacío.
-  // Se corrige en la fase 3 (entonces se quita el ".fail").
+test('un premio con nombre de solo espacios no se agrega (corregido en la fase 3)', async ({ app, page }) => {
   await app.abrir({ vista: 'tienda' });
   await page.fill('#pn', '   ');
   await page.getByRole('button', { name: 'Agregar' }).click();
+  await expect(app.toasts()).toContainText('Escribe un nombre para el premio');
   const premios = (await app.estado())?.premios ?? [];
   expect(premios.filter((p) => !p.nombre.trim())).toEqual([]);
 });
@@ -74,7 +77,9 @@ test('comprar un accesorio lo equipa, y se puede quitar y volver a poner', async
 });
 
 test('los accesorios puestos se ven en la mascota del inicio', async ({ app, page }) => {
-  await app.abrir({ estado: { owned: ['lentes', 'corona', 'mascarilla'], equip: ['lentes', 'corona', 'mascarilla'] } });
+  await app.abrir({
+    estado: { owned: ['lentes', 'corona', 'mascarilla'], equip: ['lentes', 'corona', 'mascarilla'] },
+  });
   const svg = page.locator('.hero svg');
   await expect(svg.locator('circle[r="15"]')).toHaveCount(2); // lentes
   await expect(svg.locator('path[d^="M72 50"]')).toHaveCount(1); // corona
@@ -82,7 +87,10 @@ test('los accesorios puestos se ven en la mascota del inicio', async ({ app, pag
 });
 
 for (const conGorro of [false, true]) {
-  test(`etapa Especialista ${conGorro ? 'con gorro quirúrgico: el gorro reemplaza al birrete' : 'sin gorro: lleva birrete'}`, async ({ app, page }) => {
+  test(`etapa Especialista ${conGorro ? 'con gorro quirúrgico: el gorro reemplaza al birrete' : 'sin gorro: lleva birrete'}`, async ({
+    app,
+    page,
+  }) => {
     const accesorios = conGorro ? ['gorro'] : [];
     await app.abrir({ estado: { xp: 3675, owned: accesorios, equip: accesorios } });
     await expect(page.locator('.hero svg path[d^="M58 52"]')).toHaveCount(conGorro ? 0 : 1); // birrete

@@ -65,7 +65,7 @@ function vCuaderno() {
    <div><div class="stat">${deBanco}</div><span class="small mute">del banco</span></div>
    <div><div class="stat">${total - deBanco}</div><span class="small mute">externas</span></div></div>
   <label class="chk" style="margin-top:14px"><input type="checkbox" id="cu-fall" ${cuFiltro.incluirFalladas ? 'checked' : ''}> Incluir las preguntas del banco que fallaste alguna vez (${falladasFueraDelCuaderno().length})</label>
-  <button class="btn" id="cu-go" style="width:100%;margin-top:12px"></button></div>
+  <button class="btn" id="cu-go" style="width:100%;margin-top:12px"></button><div id="cu-go-aviso"></div></div>
  <h2 class="sec">Mis preguntas</h2>
  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));margin-bottom:12px">
   <div><label for="cu-cu">Curso</label><select id="cu-cu"><option value="">Todos</option>${cursosCuaderno.map((c) => `<option ${c === cuFiltro.curso ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
@@ -124,9 +124,10 @@ function vCuaderno() {
     pintarBoton();
   };
   $('#cu-go').onclick = () =>
-    startQuiz(
+    empezarConAviso(
       shuffle(listaRepasoCuaderno({ curso: cuFiltro.curso, incluirFalladas: cuFiltro.incluirFalladas })),
       'cuaderno',
+      $('#cu-go-aviso'),
     );
 
   // Acciones de cada entrada: editar explicación, archivar, quitar.

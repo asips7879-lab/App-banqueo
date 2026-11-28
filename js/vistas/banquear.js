@@ -52,10 +52,11 @@ function startQuiz(list, mode) {
     res: [],
     coins0: S.coins,
     xp0: S.xp,
+    logros0: S.logros.length,
     finished: false,
   };
   if (mode === 'simulacro') {
-    Q.end = Date.now() + list.length * 72000;
+    Q.end = Date.now() + list.length * SIM_SEGUNDOS * 1000;
     Q.tick = setInterval(() => {
       const t = $('#timer');
       if (!t) return;
@@ -67,6 +68,18 @@ function startQuiz(list, mode) {
   }
   location.hash = '#banquear';
   route();
+}
+// Empieza una sesión. Si hay otra a medias, primero pide confirmación dentro del elemento `aviso`
+// (lo ya respondido queda guardado; solo se pierden las preguntas que faltaban).
+function empezarConAviso(lista, modo, aviso) {
+  if (!Q || Q.finished) return startQuiz(lista, modo);
+  aviso.innerHTML = `<div class="aviso" role="alert"><p><b>Tienes un banqueo a medias</b> (${Q.res.length} de ${Q.list.length} respondidas). Si empiezas otro, ese se cierra sin mostrar sus resultados; lo que ya respondiste queda guardado.</p>
+ <div class="row"><button class="btn mini" data-aviso="si">Cerrarlo y empezar</button><a class="btn alt mini" href="#banquear" style="text-decoration:none">Volver a mi banqueo</a></div></div>`;
+  aviso.querySelector('[data-aviso="si"]').onclick = () => {
+    clearInterval(Q.tick);
+    Q = null;
+    startQuiz(lista, modo);
+  };
 }
 function renderQuiz() {
   const q = Q.list[Q.i],
@@ -119,13 +132,14 @@ function doConfirm() {
     if (b.dataset.l === q.correcta) b.classList.add('ok');
     else if (b.dataset.l === Q.sel) b.classList.add('bad');
   });
-  $('#fb').innerHTML = fbHtml(q, ok, Q.conf);
+  $('#fb').innerHTML = fbHtml(q, ok, Q.conf, true);
   $('#ok').textContent = Q.i + 1 < Q.list.length ? 'Siguiente' : 'Ver resultados';
   document.querySelector('.conf').style.visibility = 'hidden';
   header();
   $('#fb').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-function fbHtml(q, ok, conf) {
+// conHemi: muestra a la mascota reaccionando (al responder; no en la revisión de resultados).
+function fbHtml(q, ok, conf, conHemi) {
   const e = entradaDe(q),
     nota = e && e.nota,
     peligro = !ok && conf === 'seguro' && !q.externa;
@@ -137,7 +151,10 @@ function fbHtml(q, ok, conf) {
     : nota
       ? `<div class="oficial"><b>Explicación de la app</b><div>${esc(q.explicacion)}</div></div>`
       : `<div>${esc(q.explicacion)}</div>`;
-  return `<div class="fb ${ok ? 'ok' : 'bad'}"><h3>${ok ? '¡Correcto!' : 'Incorrecto · la respuesta es ' + q.correcta}${ok && conf === 'seguro' ? ' · bono de seguridad ×1.5' : ''}${peligro ? ' · error peligroso, irá primero a tu repaso' : ''}</h3>
+  const hemi = conHemi
+    ? `<div class="fb-hemi">${mascot(stageOf(levelInfo(S.xp).l), S.equip, ok ? 'feliz' : 'normal', ok ? 'hop' : '')}</div>`
+    : '';
+  return `<div class="fb ${ok ? 'ok' : 'bad'}">${hemi}<h3>${ok ? '¡Correcto!' : 'Incorrecto · la respuesta es ' + q.correcta}${ok && conf === 'seguro' ? ' · bono de seguridad ×1.5' : ''}${peligro ? ' · error peligroso, irá primero a tu repaso' : ''}</h3>
  ${mia}${oficial}${q.perla ? `<div class="perla">Perla: ${esc(q.perla)}</div>` : ''}${q.fuente ? `<p class="small mute" style="margin:8px 0 0">Fuente: ${esc(q.fuente)}</p>` : ''}</div>`;
 }
 function next() {
@@ -163,10 +180,11 @@ function renderResults() {
     ok = Q.res.filter((r) => r.ok).length,
     pct = Math.round((ok / n) * 100),
     md = pct >= 70 ? 'feliz' : pct >= 40 ? 'normal' : 'triste',
-    alRepaso = Q.res.filter((r) => !r.ok && !r.q.externa).length;
+    alRepaso = Q.res.filter((r) => !r.ok && !r.q.externa).length,
+    deLogros = (S.logros.length - (Q.logros0 ?? S.logros.length)) * 50;
   $('#view').innerHTML = `<div class="card" style="max-width:780px;margin:auto">
  <div class="row" style="gap:18px"><div style="width:140px">${mascot(stageOf(levelInfo(S.xp).l), S.equip, md, 'hop')}</div>
- <div><h1>${ok}/${n} correctas · ${pct}%</h1><p class="mute">+${S.coins - Q.coins0} monedas · +${S.xp - Q.xp0} XP${alRepaso ? ' · ' + alRepaso + ' preguntas pasan a tu repaso' : ''}</p>
+ <div><h1>${ok}/${n} correctas · ${pct}%</h1><p class="mute">+${S.coins - Q.coins0} monedas${deLogros ? ` (incluye +${deLogros} por logros)` : ''} · +${S.xp - Q.xp0} XP${alRepaso ? ' · ' + alRepaso + ' preguntas pasan a tu repaso' : ''}</p>
  <div class="row"><button class="btn" id="again">Nuevo banqueo</button><a class="btn alt" href="#inicio" style="text-decoration:none">Ver misiones</a></div></div></div>
  <h2 class="sec">Revisión</h2><div id="revision">${Q.res
    .map(

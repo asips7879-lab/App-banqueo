@@ -32,6 +32,8 @@ function header() {
 function route() {
   const v = (location.hash || '#inicio').slice(1);
   const view = VIEWS[v] ? v : 'inicio';
+  // Los resultados de una sesión terminada se cierran al ir a otra vista: al volver, Banquear empieza de cero.
+  if (Q && Q.finished && view !== 'banquear') Q = null;
   ensureDaily();
   renderNav(PESTANA_DE[view] || view);
   header();

@@ -78,3 +78,54 @@ test('en escritorio la navegación va arriba', async ({ app, page }) => {
   const caja = await page.locator('#nav').boundingBox();
   expect(caja.y).toBeLessThan(10);
 });
+
+for (const ancho of [1000, 1023]) {
+  test(`a ${ancho} px (tablet) la navegación va abajo, con íconos`, async ({ app, page }) => {
+    await page.setViewportSize({ width: ancho, height: 800 });
+    await app.abrir();
+    const caja = await page.locator('#nav').boundingBox();
+    expect(caja.y).toBeGreaterThan(700);
+    await expect(page.locator('#nav a svg').first()).toBeVisible();
+  });
+}
+
+for (const ancho of [1024, 1100, 1280]) {
+  test(`a ${ancho} px la navegación va arriba sin chocar con el nivel y las monedas`, async ({
+    app,
+    page,
+  }) => {
+    await page.setViewportSize({ width: ancho, height: 800 });
+    await app.abrir({ estado: { xp: 3675, coins: 12345 } }); // píldoras anchas: "Nv 15" y 12345
+    const espacio = await page.evaluate(() => {
+      const pildoras = [...document.querySelectorAll('header .pill')].map(
+        (e) => e.getBoundingClientRect().right,
+      );
+      return document.querySelector('#nav a').getBoundingClientRect().left - Math.max(...pildoras);
+    });
+    expect(espacio).toBeGreaterThanOrEqual(40);
+    expect((await page.locator('#nav').boundingBox()).y).toBeLessThan(10);
+  });
+}
+
+for (const lastAct of [HOY, dia(-1), dia(-3)]) {
+  test(`reticulocito: los puntitos no tocan la boca (última actividad ${lastAct})`, async ({ app, page }) => {
+    await app.abrir({ estado: { xp: 225, lastAct } });
+    const choques = await page.locator('.hero svg').evaluate((svg) => {
+      const caja = (e) => e.getBBox();
+      const boca = caja(svg.querySelector('path[stroke="#3b0a14"]'));
+      const margen = 2.5; // medio grosor del trazo de la boca
+      const puntos = [...svg.querySelectorAll('circle[fill="#9f1239"]')];
+      if (puntos.length !== 3) return -1; // deben verse los 3 puntitos
+      return puntos
+        .map(caja)
+        .filter(
+          (p) =>
+            p.x < boca.x + boca.width + margen &&
+            p.x + p.width > boca.x - margen &&
+            p.y < boca.y + boca.height + margen &&
+            p.y + p.height > boca.y - margen,
+        ).length;
+    });
+    expect(choques).toBe(0);
+  });
+}

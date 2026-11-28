@@ -3,7 +3,8 @@
 
 function ensureDaily() {
   if (S.daily.date !== today())
-    S.daily = { date: today(), n: 0, ok: 0, run: 0, courses: [], rev: 0, claimed: [] };
+    S.daily = { date: today(), n: 0, ok: 0, run: 0, runHoy: 0, courses: [], rev: 0, claimed: [] };
+  // run: mejor racha de aciertos de hoy (misión m3); runHoy: racha de aciertos en curso, solo de hoy
 }
 function mood() {
   if (!S.lastAct || S.lastAct === today()) return 'feliz';
@@ -34,7 +35,7 @@ function checkLog() {
   LOG.forEach((l) => {
     if (!S.logros.includes(l.id) && l.f()) {
       S.logros.push(l.id);
-      S.coins += 50;
+      gain(50, 0);
       toast('Logro: ' + l.n + ' (+50)');
     }
   });
@@ -61,27 +62,29 @@ function record(q, sel, conf, mode) {
     a.ok++;
     S.run++;
     S.bestRun = Math.max(S.bestRun, S.run);
-    d.run = Math.max(d.run, S.run);
+    d.runHoy = (d.runHoy || 0) + 1; // la racha de ayer no cuenta para la misión de hoy
+    d.run = Math.max(d.run, d.runHoy);
     if (q.dificultad === 'Difícil') S.hardOk++;
     let coins = REW[q.dificultad] || 5;
     if (conf === 'seguro') coins = Math.round(coins * 1.5);
     gain(coins, XPR[q.dificultad] || 12);
     if (S.run % 5 === 0) {
-      S.coins += 10;
+      gain(10, 0);
       toast(S.run + ' aciertos seguidos · +10');
     }
   } else {
     S.run = 0;
+    d.runHoy = 0;
     gain(0, 3);
   }
   const s = S.srs[q.id];
   if (mode === 'repaso' && s) {
     d.rev++;
     if (ok) {
-      s.box++;
-      if (s.box >= 4) delete S.srs[q.id];
+      s.box++; // aciertos seguidos en el repaso
+      if (s.box > REPASO_DIAS.length) delete S.srs[q.id];
       else {
-        s.due = addDays(t, [1, 3, 7, 15][s.box]);
+        s.due = addDays(t, REPASO_DIAS[s.box - 1]);
         s.danger = false;
       }
     } else {
@@ -89,7 +92,10 @@ function record(q, sel, conf, mode) {
       s.due = addDays(t, 1);
       s.danger = s.danger || conf === 'seguro';
     }
-  } else if (!ok) S.srs[q.id] = { box: 0, due: t, danger: conf === 'seguro' };
+  } else if (!ok) {
+    // Fallada fuera del repaso: vuelve hoy desde cero, sin perder una marca de error peligroso anterior.
+    S.srs[q.id] = { box: 0, due: t, danger: !!(s && s.danger) || conf === 'seguro' };
+  }
   if (d.n === 10) {
     if (S.lastDay === addDays(t, -1)) S.streak++;
     else if (S.lastDay !== t) S.streak = 1;
